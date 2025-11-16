@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Navigation Un Clic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="p-8">
+        <h1 class="text-2xl font-bold mb-4">Test Navigation - Un Clic</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">Instructions de test :</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li>Cliquez UNE SEULE FOIS sur chaque lien ci-dessous</li>
+                <li>Le lien doit fonctionner immédiatement</li>
+                <li>Pas besoin de cliquer deux fois</li>
+                <li>Le compteur doit s'incrémenter à chaque clic</li>
+            </ol>
+        </div>
+        
+        <!-- Simulation du sidebar -->
+        <nav class="bg-gray-800 p-4 rounded-lg mb-6">
+            <div class="space-y-2">
+                <a href="#test1" onclick="incrementCounter(this)" class="block px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">
+                    Test Link 1 <span class="click-count">(0 clics)</span>
+                </a>
+                <a href="#test2" onclick="incrementCounter(this)" class="block px-4 py-2 text-white bg-green-600 rounded hover:bg-green-700">
+                    Test Link 2 <span class="click-count">(0 clics)</span>
+                </a>
+                <a href="#test3" onclick="incrementCounter(this)" class="block px-4 py-2 text-white bg-purple-600 rounded hover:bg-purple-700">
+                    Test Link 3 <span class="click-count">(0 clics)</span>
+                </a>
+            </div>
+        </nav>
+        
+        <div id="log" class="bg-white p-4 rounded border">
+            <h3 class="font-semibold mb-2">Log des clics :</h3>
+            <div id="logContent">Aucun clic encore...</div>
+        </div>
+    </div>
+
+    <script>
+        let clickCounts = {};
+        
+        function incrementCounter(element) {
+            const href = element.getAttribute('href');
+            clickCounts[href] = (clickCounts[href] || 0) + 1;
+            
+            // Mettre à jour l'affichage
+            const countSpan = element.querySelector('.click-count');
+            countSpan.textContent = `(${clickCounts[href]} clics)`;
+            
+            // Logger
+            const log = document.getElementById('logContent');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `<div>${time}: Clic sur ${href} (total: ${clickCounts[href]})</div>`;
+            
+            // Simuler la navigation (empêcher le vrai clic)
+            event.preventDefault();
+            
+            console.log('Navigation vers:', href, 'Nombre de clics:', clickCounts[href]);
+        }
+        
+        // Test si les événements se déclenchent correctement
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                console.log('Clic détecté sur lien:', e.target.href);
+            }
+        });
+    </script>
+</body>
+</html>
