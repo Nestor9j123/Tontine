@@ -39,6 +39,13 @@ class Kernel extends ConsoleKernel
                  ->at('02:00')
                  ->description('Nettoyage des anciennes données');
 
+        // Génération automatique des rapports mensuels le 28 de chaque mois
+        $schedule->command('reports:generate-monthly')
+                 ->monthlyOn(28, '08:00')
+                 ->description('Génération automatique du rapport mensuel avec notification')
+                 ->emailOutputOnFailure(config('mail.admin_email', 'admin@example.com'))
+                 ->appendOutputTo(storage_path('logs/monthly-reports.log'));
+
         // Tâches supplémentaires
         $schedule->command('cache:prune-stale-tags')->hourly();
         $schedule->command('sanctum:prune-expired --hours=24')->daily();

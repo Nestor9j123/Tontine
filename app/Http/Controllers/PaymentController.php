@@ -86,7 +86,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:1',
             'daily_amount' => 'nullable|numeric|min:1',
             'days_count' => 'nullable|integer|min:1|max:365',
-            'payment_date' => 'required|date',
+            'payment_date' => 'nullable|date',
             'payment_method' => 'required|in:cash,mobile_money,bank_transfer',
             'transaction_id' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -108,6 +108,9 @@ class PaymentController extends Controller
         }
 
         $validated['collected_by'] = auth()->id();
+        
+        // Forcer la date de paiement à aujourd'hui pour sécurité
+        $validated['payment_date'] = now()->format('Y-m-d');
         
         // Détecter si c'est un paiement multiple
         $isMultiplePayment = !empty($validated['daily_amount']) && !empty($validated['days_count']);
@@ -140,6 +143,17 @@ class PaymentController extends Controller
         $tontine->increment('completed_payments');
         $tontine->increment('paid_amount', $validated['amount']);
         $tontine->decrement('remaining_amount', $validated['amount']);
+        
+        // Vérifier si la tontine est maintenant complète
+        $tontine->refresh(); // Récupérer les valeurs mises à jour
+        if ($tontine->remaining_amount <= 0 && $tontine->status !== 'completed') {
+            $tontine->update([
+                'status' => 'completed',
+                'end_date' => now(),
+                'validated_at' => now(),
+                'validated_by' => auth()->id(),
+            ]);
+        }
 
         \App\Models\ActivityLog::log('create', 'Payment', $payment->id, null, $validated);
 
@@ -240,6 +254,21 @@ class PaymentController extends Controller
             'validated_by' => auth()->id(),
             'validated_at' => now(),
         ]);
+
+        // Si le paiement n'était pas encore validé automatiquement, mettre à jour la tontine
+        $tontine = $payment->tontine;
+        if ($payment->wasChanged('status')) {
+            // Vérifier si la tontine est maintenant complète
+            $tontine->refresh();
+            if ($tontine->remaining_amount <= 0 && $tontine->status !== 'completed') {
+                $tontine->update([
+                    'status' => 'completed',
+                    'end_date' => now(),
+                    'validated_at' => now(),
+                    'validated_by' => auth()->id(),
+                ]);
+            }
+        }
 
         // Traitement automatique des notifications
         $notificationService = new NotificationService();

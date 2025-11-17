@@ -242,9 +242,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Routes pour les notifications
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('notifications/{notification}/delivered', [NotificationController::class, 'markAsDelivered'])->name('notifications.delivered');
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('notifications/{uuid}/restore', [NotificationController::class, 'restore'])->name('notifications.restore')->middleware('role:super_admin|secretary');
+    Route::delete('notifications/{uuid}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.force-delete')->middleware('role:super_admin');
     
     // API routes pour les notifications
     Route::get('api/notifications/count', [NotificationController::class, 'getUnreadCount'])->name('api.notifications.count');

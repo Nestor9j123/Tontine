@@ -48,6 +48,41 @@
         </style>
     </head>
     <body class="font-sans antialiased bg-gray-50" data-theme="{{ $themeVars['theme_mode'] ?? 'light' }}">
+        <!-- Notifications centrées -->
+        <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2">
+            <!-- Messages de session -->
+            @if(session('success'))
+                <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>{{ session('success') }}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-green-200 hover:text-white">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+            
+            @if(session('error'))
+                <div class="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>{{ session('error') }}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-red-200 hover:text-white">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
         <div x-data="{ 
             sidebarOpen: false,
             mobileMenuOpen: false,
@@ -296,7 +331,116 @@
                 });
             }
         });
+        
+        // Fonctions de notification JavaScript globales
+        window.showSuccess = function(title, message = '') {
+            const toast = createToast('success', title, message);
+            showToast(toast);
+        };
+        
+        window.showError = function(title, message = '') {
+            const toast = createToast('error', title, message);
+            showToast(toast);
+        };
+        
+        window.showInfo = function(title, message = '') {
+            const toast = createToast('info', title, message);
+            showToast(toast);
+        };
+        
+        window.showWarning = function(title, message = '') {
+            const toast = createToast('warning', title, message);
+            showToast(toast);
+        };
+        
+        function createToast(type, title, message) {
+            const colors = {
+                success: { bg: 'bg-green-500', icon: 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' },
+                error: { bg: 'bg-red-500', icon: 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z' },
+                info: { bg: 'bg-blue-500', icon: 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z' },
+                warning: { bg: 'bg-yellow-500', icon: 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z' }
+            };
+            
+            const color = colors[type] || colors.info;
+            const fullMessage = message ? `${title}: ${message}` : title;
+            
+            return `
+                <div class="${color.bg} text-white px-6 py-3 rounded-lg shadow-lg toast-item" style="animation: slideInDown 0.5s ease-out">
+                    <div class="flex items-center max-w-md">
+                        <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="${color.icon}" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="flex-1 text-sm">${fullMessage}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white/70 hover:text-white flex-shrink-0">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showToast(toastHtml) {
+            const container = document.getElementById('toast-container');
+            if (container) {
+                container.insertAdjacentHTML('beforeend', toastHtml);
+                
+                // Auto-remove après 5 secondes
+                const toastElements = container.querySelectorAll('.toast-item');
+                const lastToast = toastElements[toastElements.length - 1];
+                if (lastToast) {
+                    setTimeout(() => {
+                        if (lastToast.parentNode) {
+                            lastToast.style.animation = 'slideOutUp 0.5s ease-in';
+                            setTimeout(() => lastToast.remove(), 500);
+                        }
+                    }, 5000);
+                }
+            }
+        }
+        
+        // Auto-hide session messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionMessages = document.querySelectorAll('#toast-container > div:not(.toast-item)');
+            sessionMessages.forEach(message => {
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.style.animation = 'slideOutUp 0.5s ease-in';
+                        setTimeout(() => message.remove(), 500);
+                    }
+                }, 5000);
+            });
+        });
 
     </script>
+    
+    <style>
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -100%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        
+        @keyframes slideOutUp {
+            from {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -100%);
+            }
+        }
+        
+        #toast-container .toast-item {
+            transform: translateX(-50%);
+        }
+    </style>
 </body>
 </html>

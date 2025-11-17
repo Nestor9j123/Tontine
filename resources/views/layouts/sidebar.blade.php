@@ -146,10 +146,8 @@
                     $threshold = \App\Models\SystemSetting::get('low_stock_threshold', 10);
                     $lowStockCount = \App\Models\Product::where('is_active', true)
                         ->where(function($query) use ($threshold) {
-                            $query->where('stock_quantity', '<=', $threshold)
-                                  ->where('stock_quantity', '>', 0);
+                            $query->where('stock_quantity', '<=', $threshold);
                         })
-                        ->orWhere('stock_quantity', 0)
                         ->count();
                 @endphp
                 @if($lowStockCount > 0)

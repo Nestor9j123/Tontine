@@ -8,9 +8,17 @@
         })
         ->orWhere('stock_quantity', 0)
         ->count();
+    
+    // Vérifier si la notification a déjà été affichée dans cette session
+    $notificationKey = 'low_stock_shown_' . $lowStockProducts . '_' . auth()->id();
+    $alreadyShown = session($notificationKey, false);
 @endphp
 
-@if($lowStockProducts > 0)
+@if($lowStockProducts > 0 && !$alreadyShown)
+@php
+    // Marquer comme affichée pour cette session
+    session([$notificationKey => true]);
+@endphp
 <div id="low-stock-notification" class="fixed bottom-4 right-4 z-40">
     <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-lg shadow-lg animate-pulse-slow relative">
         <!-- Bouton fermer -->

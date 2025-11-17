@@ -111,6 +111,9 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    @php
+                        $globalThreshold = \App\Models\SystemSetting::get('low_stock_threshold', 10);
+                    @endphp
                     @forelse($products as $product)
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -140,17 +143,17 @@
                             <span class="text-sm font-semibold text-gray-900">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-lg font-bold {{ $product->stock_quantity <= $product->min_stock_alert ? 'text-red-600' : 'text-green-600' }}">
+                            <span class="text-lg font-bold {{ $product->stock_quantity <= $globalThreshold ? 'text-red-600' : 'text-green-600' }}">
                                 {{ $product->stock_quantity }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm text-gray-600">{{ $product->min_stock_alert }}</span>
+                            <span class="text-sm text-gray-600">{{ $globalThreshold }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($product->stock_quantity <= 0)
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Rupture</span>
-                            @elseif($product->stock_quantity <= $product->min_stock_alert)
+                            @elseif($product->stock_quantity <= $globalThreshold)
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Alerte</span>
                             @else
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Disponible</span>

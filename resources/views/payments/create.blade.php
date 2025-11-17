@@ -17,7 +17,7 @@
                 <p class="text-sm text-gray-600 mt-1">Enregistrer un paiement pour une tontine</p>
             </div>
 
-            <form method="POST" action="{{ route('payments.store') }}" x-data="paymentForm()" @submit="validatePaymentForm">
+            <form method="POST" action="{{ route('payments.store') }}" x-data="paymentForm()" @submit.prevent="validatePaymentForm($event)">
                 @csrf
 
                 <div class="space-y-6">
@@ -117,9 +117,11 @@
                         <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
                             Montant <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" name="amount" id="amount" step="1" x-model="amount"
+                        <input type="number" name="amount" id="single_amount" step="1" min="1" x-model="amount" 
+                            :required="paymentType === 'single'"
+                            x-bind:disabled="paymentType !== 'single'"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="Entrez le montant en FCFA">
+                            placeholder="Entrez le montant en FCFA (ex: 1000)">
                         @error('amount')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -132,7 +134,8 @@
                                 <label for="daily_amount" class="block text-sm font-medium text-gray-700 mb-2">
                                     Montant Quotidien <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" x-model="dailyAmount" @input="calculateTotal()" step="1"
+                                <input type="number" name="daily_amount_input" x-model="dailyAmount" @input="calculateTotal()" step="1" min="1" 
+                                    :required="paymentType === 'multiple'"
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Ex: 1000">
                             </div>
@@ -140,7 +143,8 @@
                                 <label for="days_count" class="block text-sm font-medium text-gray-700 mb-2">
                                     Nombre de Jours <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" x-model="daysCount" @input="calculateTotal()" max="365" step="1"
+                                <input type="number" name="days_count_input" x-model="daysCount" @input="calculateTotal()" max="365" step="1" min="1" 
+                                    :required="paymentType === 'multiple'"
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Ex: 10">
                             </div>
@@ -158,22 +162,27 @@
                             </div>
                         </div>
 
-                        {{-- Champ caché pour le montant total --}}
-                        <input type="hidden" name="amount" x-bind:value="dailyAmount * daysCount">
-                        <input type="hidden" name="daily_amount" x-bind:value="dailyAmount">
-                        <input type="hidden" name="days_count" x-bind:value="daysCount">
+                        {{-- Champs cachés pour le montant total - paiement multiple seulement --}}
+                        <input type="hidden" name="daily_amount" x-bind:value="dailyAmount" x-bind:disabled="paymentType === 'single'">
+                        <input type="hidden" name="days_count" x-bind:value="daysCount" x-bind:disabled="paymentType === 'single'">
+                        {{-- Champ amount pour paiement multiple --}}
+                        <input type="hidden" name="amount" x-bind:value="dailyAmount * daysCount" x-bind:disabled="paymentType === 'single'">
                     </div>
 
-                    {{-- Date de paiement --}}
-                    <div>
-                        <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-2">
-                            Date de Paiement <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" name="payment_date" id="payment_date" value="{{ date('Y-m-d') }}" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        @error('payment_date')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                    {{-- Date de paiement automatique (aujourd'hui) --}}
+                    <input type="hidden" name="payment_date" value="{{ date('Y-m-d') }}">
+                    
+                    {{-- Affichage informatif de la date --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <div>
+                                <span class="text-sm font-medium text-blue-900">Date de Paiement :</span>
+                                <span class="text-sm text-blue-700 ml-2">{{ \Carbon\Carbon::now()->format('d/m/Y') }} (Aujourd'hui)</span>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Méthode de paiement --}}
@@ -305,10 +314,10 @@
                     
                     // Validation du montant selon le type de paiement
                     if (this.paymentType === 'single') {
-                        const amount = parseFloat(this.amount);
-                        if (!amount || amount < 1) {
+                        const amount = parseFloat(this.amount || 0);
+                        if (isNaN(amount) || amount < 1) {
                             event.preventDefault();
-                            showError('Montant invalide', 'Le montant doit être d\'au moins 1 FCFA.');
+                            showError('Montant invalide', 'Veuillez saisir un montant d\'au moins 1 FCFA.');
                             return false;
                         }
                         
@@ -319,18 +328,18 @@
                             return false;
                         }
                     } else if (this.paymentType === 'multiple') {
-                        const dailyAmount = parseFloat(this.dailyAmount);
-                        const daysCount = parseInt(this.daysCount);
+                        const dailyAmount = parseFloat(this.dailyAmount || 0);
+                        const daysCount = parseInt(this.daysCount || 0);
                         
-                        if (!dailyAmount || dailyAmount < 1) {
+                        if (isNaN(dailyAmount) || dailyAmount < 1) {
                             event.preventDefault();
-                            showError('Montant quotidien invalide', 'Le montant quotidien doit être d\'au moins 1 FCFA.');
+                            showError('Montant quotidien invalide', 'Veuillez saisir un montant quotidien d\'au moins 1 FCFA.');
                             return false;
                         }
                         
-                        if (!daysCount || daysCount < 1) {
+                        if (isNaN(daysCount) || daysCount < 1) {
                             event.preventDefault();
-                            showError('Nombre de jours invalide', 'Le nombre de jours doit être d\'au moins 1.');
+                            showError('Nombre de jours invalide', 'Veuillez saisir un nombre de jours d\'au moins 1.');
                             return false;
                         }
                         
@@ -348,8 +357,14 @@
                         }
                     }
                     
-                    // Si tout est valide, on peut soumettre
+                    // Si tout est valide, on soumet le formulaire
                     showInfo('Enregistrement en cours...', 'Veuillez patienter pendant l\'enregistrement du paiement.');
+                    
+                    // Soumettre le formulaire manuellement
+                    setTimeout(() => {
+                        event.target.submit();
+                    }, 100);
+                    
                     return true;
                 },
                 

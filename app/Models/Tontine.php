@@ -107,8 +107,27 @@ class Tontine extends Model
     // Accessors
     public function getProgressPercentageAttribute()
     {
-        if ($this->total_payments == 0) return 0;
-        return round(($this->completed_payments / $this->total_payments) * 100, 2);
+        if ($this->total_amount == 0) return 0;
+        
+        // Calculer le pourcentage basé sur les montants réels payés (validés + auto-validés)
+        // Utiliser le champ paid_amount qui est mis à jour lors de chaque paiement
+        $percentage = ($this->paid_amount / $this->total_amount) * 100;
+        
+        // S'assurer que le pourcentage ne dépasse pas 100%
+        return round(min($percentage, 100), 2);
+    }
+
+    /**
+     * Calculer la progression basée uniquement sur les paiements validés
+     */
+    public function getValidatedProgressPercentageAttribute()
+    {
+        if ($this->total_amount == 0) return 0;
+        
+        $validatedAmount = $this->payments()->where('status', 'validated')->sum('amount');
+        $percentage = ($validatedAmount / $this->total_amount) * 100;
+        
+        return round(min($percentage, 100), 2);
     }
 
     public function getFormattedTotalAmountAttribute()
@@ -140,6 +159,73 @@ class Tontine extends Model
     public function getTotalPaymentsAmountAttribute()
     {
         return $this->payments()->sum('amount');
+    }
+
+    /**
+     * Marquer la tontine comme livrée et décrémenter le stock du produit
+     */
+    public function markAsDelivered($userId)
+    {
+        // Vérifier que la tontine est éligible à la livraison
+        if ($this->delivery_status === 'delivered') {
+            throw new \Exception('Cette tontine a déjà été livrée.');
+        }
+
+        if ($this->status !== 'completed') {
+            throw new \Exception('Cette tontine n\'est pas terminée et ne peut pas être livrée.');
+        }
+
+        // Transaction pour s'assurer de la cohérence
+        \DB::transaction(function () use ($userId) {
+            // Mettre à jour le statut de livraison de la tontine
+            $this->update([
+                'delivery_status' => 'delivered',
+                'delivered_at' => now(),
+                'delivered_by' => $userId,
+            ]);
+
+            // Décrémenter le stock du produit
+            if ($this->product && $this->product->stock_quantity > 0) {
+                $stockBefore = $this->product->stock_quantity;
+                $this->product->decrement('stock_quantity', 1);
+                // Refresh pour obtenir la nouvelle valeur
+                $this->product->refresh();
+                $stockAfter = $this->product->stock_quantity;
+                
+                // Log de l'activité de stock avec les bons champs
+                \App\Models\StockMovement::create([
+                    'product_id' => $this->product_id,
+                    'user_id' => $userId,
+                    'type' => 'out',
+                    'quantity' => 1,
+                    'stock_before' => $stockBefore,
+                    'stock_after' => $stockAfter,
+                    'reference' => "Tontine {$this->code}",
+                    'reason' => "Livraison tontine - Client: {$this->client->full_name}",
+                ]);
+            }
+        });
+
+        return $this;
+    }
+
+    /**
+     * Vérifier si la tontine peut être livrée
+     */
+    public function canBeDelivered()
+    {
+        return $this->status === 'completed' && 
+               $this->delivery_status === 'pending' &&
+               $this->product &&
+               $this->product->stock_quantity > 0;
+    }
+
+    /**
+     * Vérifier si la tontine est livrée
+     */
+    public function isDelivered()
+    {
+        return $this->delivery_status === 'delivered';
     }
 
     // Boot method
