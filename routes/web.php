@@ -41,9 +41,18 @@ Route::get('/debug', function () {
         $dbStatus = 'Failed: ' . $e->getMessage();
     }
     
+    // Vérifier les utilisateurs en base
+    try {
+        $users = DB::table('users')->select('id', 'name', 'email', 'created_at')->get();
+        $usersInfo = $users->toArray();
+    } catch (\Exception $e) {
+        $usersInfo = 'Error: ' . $e->getMessage();
+    }
+    
     return response()->json([
         'status' => 'Laravel OK',
         'database' => $dbStatus,
+        'users_in_db' => $usersInfo,
         'env' => app()->environment(),
         'debug' => config('app.debug'),
         'url' => config('app.url'),
