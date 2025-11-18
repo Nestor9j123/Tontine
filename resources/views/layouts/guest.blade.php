@@ -14,13 +14,8 @@
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-        <!-- Scripts -->
-        @if(file_exists(public_path('build/manifest.json')))
-            @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @else
-            <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-            <script src="{{ asset('js/app.js') }}" defer></script>
-        @endif
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">

@@ -33,13 +33,8 @@
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         
-        <!-- Scripts -->
-        @if(file_exists(public_path('build/manifest.json')))
-            @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @else
-            <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-            <script src="{{ asset('js/app.js') }}" defer></script>
-        @endif
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
         
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
