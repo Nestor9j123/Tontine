@@ -40,12 +40,20 @@ git push origin master
 - **Root Directory** : (laisser vide)
 - **Dockerfile Path** : `./Dockerfile.ultra`
 
-**OPTION A-4 - DOCKER MINIMAL (Debug)** :
+**OPTION A-4 - DOCKER LARAVEL COMPLET (Recommandé pour app web)** :
 - **Name** : `tontine-app`
 - **Runtime** : `Docker`
 - **Branch** : `master`
 - **Root Directory** : (laisser vide)
 - **Dockerfile Path** : `./Dockerfile.minimal`
+- **Auto-Deploy** : Yes
+
+**✅ Cette option déploie :**
+- Application Laravel complète avec connexion
+- Migrations automatiques
+- Seeders avec données de démo
+- PWA intégrée (installable via navigateur)
+- Interface web accessible directement
 
 **OPTION B - NODE.JS (Alternative)** :
 - **Name** : `tontine-app`
