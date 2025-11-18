@@ -103,6 +103,27 @@ php artisan config:clear || true
 php artisan cache:clear || true
 php artisan view:clear || true
 
+# Fix Vite manifest manquant
+echo "🎨 Création du manifest Vite..."
+mkdir -p public/build
+cat > public/build/manifest.json << 'EOF'
+{
+    "resources/css/app.css": {
+        "file": "assets/app.css",
+        "isEntry": true
+    },
+    "resources/js/app.js": {
+        "file": "assets/app.js", 
+        "isEntry": true
+    }
+}
+EOF
+
+# Créer les fichiers CSS/JS vides si ils n'existent pas
+mkdir -p public/assets
+touch public/assets/app.css
+touch public/assets/app.js
+
 echo "✅ Application Tontine Laravel prête !"
 echo "🌐 Accessible via navigateur web"
 echo "📱 PWA installable via HTTPS"

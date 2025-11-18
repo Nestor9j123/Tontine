@@ -1,0 +1,10 @@
+{
+    "resources/css/app.css": {
+        "file": "assets/app-legacy.css",
+        "isEntry": true
+    },
+    "resources/js/app.js": {
+        "file": "assets/app-legacy.js", 
+        "isEntry": true
+    }
+}
