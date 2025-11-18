@@ -1,6 +1,6 @@
-// Server Node.js pour proxifier vers PHP Laravel
+// Server Node.js pour Tontine App Laravel PWA
 const express = require('express');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -8,6 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 console.log('🚀 Démarrage du serveur Tontine App...');
+console.log('🌐 Mode: PWA Ready');
+console.log('🔒 HTTPS: Automatique sur Render');
 
 // Fonction pour démarrer Laravel
 function startLaravel() {
