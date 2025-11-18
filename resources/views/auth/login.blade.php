@@ -9,7 +9,12 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(file_exists(public_path('build/manifest.json')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+        <script src="{{ asset('js/app.js') }}" defer></script>
+    @endif
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
