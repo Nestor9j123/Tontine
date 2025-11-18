@@ -45,9 +45,11 @@ if [ ! -f .env ]; then
     echo "DB_DATABASE: ${DB_DATABASE:-NON_DEFINI}"
     
     # Autres configurations
-    echo "APP_ENV=production" >> .env
-    echo "APP_DEBUG=false" >> .env
-    echo "APP_URL=${APP_URL:-https://tontine-app-l9ng.onrender.com}" >> .env
+    echo "APP_ENV=local" >> .env
+    echo "APP_DEBUG=true" >> .env
+    echo "APP_URL=https://tontine-app-sskl.onrender.com" >> .env
+    echo "LOG_CHANNEL=single" >> .env
+    echo "LOG_LEVEL=debug" >> .env
 fi
 
 # Générer la clé d'application
@@ -84,10 +86,22 @@ php artisan view:cache || true
 php artisan storage:link || true
 php artisan optimize || true
 
-# Permissions finales
+# Permissions finales et debug Laravel
 echo "🔐 Configuration des permissions..."
-chmod -R 775 storage bootstrap/cache
+mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views
+chmod -R 777 storage bootstrap/cache
 chown -R application:application storage bootstrap/cache
+
+# Debug Laravel - forcer les logs
+echo "🐛 Activation du debug Laravel..."
+sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
+sed -i 's/APP_ENV=production/APP_ENV=local/' .env
+
+# Test rapide Laravel
+echo "🧪 Test rapide Laravel..."
+php artisan config:clear || true
+php artisan cache:clear || true
+php artisan view:clear || true
 
 echo "✅ Application Tontine Laravel prête !"
 echo "🌐 Accessible via navigateur web"
