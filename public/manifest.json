@@ -3,6 +3,7 @@
     "short_name": "Tontine",
     "description": "Application de gestion complète de tontines avec paiements, clients et rapports avancés",
     "start_url": "/",
+    "id": "tontine-app-pwa",
     "display": "standalone",
     "background_color": "#1e40af",
     "theme_color": "#2563eb",
