@@ -1,0 +1,51 @@
+# Dockerfile simple pour Tontine App Laravel
+FROM richarvey/nginx-php-fpm:3.1.6
+
+# Variables d'environnement
+ENV WEBROOT /var/www/html/public
+ENV PHP_ERRORS_STDERR 1
+ENV RUN_SCRIPTS 1
+ENV REAL_IP_HEADER 1
+
+# Installer les extensions PHP nécessaires
+RUN apk add --no-cache \
+    php83-zip \
+    php83-gd \
+    php83-pdo_mysql \
+    php83-pdo_pgsql \
+    php83-mbstring \
+    php83-xml \
+    php83-curl \
+    php83-tokenizer \
+    php83-fileinfo \
+    php83-bcmath \
+    php83-ctype \
+    php83-json \
+    php83-exif \
+    nodejs \
+    npm
+
+# Copier l'application
+COPY . /var/www/html
+
+# Changer vers le répertoire de travail
+WORKDIR /var/www/html
+
+# Installer Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Installer les dépendances
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+
+# Configuration des permissions
+RUN chown -Rf nginx:nginx /var/www/html && \
+    chmod -Rf 755 /var/www/html && \
+    chmod -Rf 777 /var/www/html/storage && \
+    chmod -Rf 777 /var/www/html/bootstrap/cache
+
+# Script de démarrage personnalisé
+COPY docker/start-simple.sh /scripts/00-laravel-deploy.sh
+RUN chmod +x /scripts/00-laravel-deploy.sh
+
+# Exposer le port
+EXPOSE 80

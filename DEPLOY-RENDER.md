@@ -26,6 +26,13 @@ git push origin master
 - **Root Directory** : (laisser vide)
 - **Dockerfile Path** : `./Dockerfile`
 
+**OPTION A-BIS - DOCKER SIMPLE (Si erreurs)** :
+- **Name** : `tontine-app`
+- **Runtime** : `Docker`
+- **Branch** : `master`
+- **Root Directory** : (laisser vide)
+- **Dockerfile Path** : `./Dockerfile.simple`
+
 **OPTION B - NODE.JS (Alternative)** :
 - **Name** : `tontine-app`
 - **Runtime** : `Node.js`
