@@ -68,18 +68,34 @@ app.get('/icons/icon-:size.png', (req, res) => {
     res.send(pngBuffer);
 });
 
-// Route alternative pour icônes avec dimensions
-app.get('/icons/icon-:width:x:height.png', (req, res) => {
-    const width = parseInt(req.params.width);
-    const height = parseInt(req.params.height);
+// Route pour toutes les icônes avec format WxH (ex: 144x144)
+app.get('/icons/icon-:dimensions.png', (req, res) => {
+    const dimensions = req.params.dimensions;
     
-    if (isNaN(width) || isNaN(height) || width < 16 || height < 16) {
-        return res.status(400).send('Invalid dimensions');
-    }
+    // PNG bleu simple pour toutes les icônes
+    const bluePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9wBgAEhAJ1AHdMKgAAAABJRU5ErkJggg==';
+    const pngBuffer = Buffer.from(bluePngBase64, 'base64');
     
-    // Image PNG 1x1 pixel en base64
-    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=';
-    const pngBuffer = Buffer.from(pngBase64, 'base64');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(pngBuffer);
+});
+
+// Routes pour les screenshots manquants
+app.get('/screenshots/:filename', (req, res) => {
+    // PNG simple pour les screenshots
+    const bluePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9wBgAEhAJ1AHdMKgAAAABJRU5ErkJggg==';
+    const pngBuffer = Buffer.from(bluePngBase64, 'base64');
+    
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(pngBuffer);
+});
+
+// Route pour les icônes de raccourcis (dashboard, payment, chat)
+app.get('/icons/:iconname-:size.png', (req, res) => {
+    const bluePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9wBgAEhAJ1AHdMKgAAAABJRU5ErkJggg==';
+    const pngBuffer = Buffer.from(bluePngBase64, 'base64');
     
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=86400');
