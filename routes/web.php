@@ -20,6 +20,7 @@ use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\AgentReceiptController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,29 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+// Route de debug pour diagnostiquer l'erreur 500
+Route::get('/debug', function () {
+    try {
+        $dbConnection = DB::connection()->getPdo();
+        $dbStatus = 'Connected';
+    } catch (\Exception $e) {
+        $dbStatus = 'Failed: ' . $e->getMessage();
+    }
+    
+    return response()->json([
+        'status' => 'Laravel OK',
+        'database' => $dbStatus,
+        'env' => app()->environment(),
+        'debug' => config('app.debug'),
+        'url' => config('app.url'),
+        'laravel_version' => app()->version(),
+        'php_version' => PHP_VERSION,
+        'storage_writable' => is_writable(storage_path()),
+        'logs_path' => storage_path('logs'),
+        'cache_path' => storage_path('framework/cache'),
+    ]);
 });
 
 
