@@ -15,6 +15,19 @@ class RenderDemoSeeder extends Seeder
 {
     public function run()
     {
+        // Nettoyer les données existantes pour éviter les conflits de clés uniques
+        $this->command->info('🧹 Nettoyage des données existantes...');
+        
+        // Supprimer dans l'ordre des dépendances
+        \DB::table('payments')->delete();
+        \DB::table('tontines')->delete();
+        \DB::table('clients')->delete();
+        \DB::table('products')->delete();
+        \DB::table('model_has_roles')->delete();
+        \DB::table('users')->delete();
+        
+        $this->command->info('✅ Données nettoyées');
+        
         // Créer les rôles
         $roles = ['super_admin', 'secretary', 'agent'];
         foreach ($roles as $role) {
@@ -23,20 +36,20 @@ class RenderDemoSeeder extends Seeder
 
         // Créer l'utilisateur admin
         $admin = User::firstOrCreate([
-            'email' => 'admin@tontine-app.com'
+            'email' => 'admin@tontine.local'
         ], [
             'name' => 'Super Admin',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('password123'),
             'email_verified_at' => now(),
         ]);
         $admin->assignRole('super_admin');
 
         // Créer un secrétaire
         $secretary = User::firstOrCreate([
-            'email' => 'secretary@tontine-app.com'
+            'email' => 'secretary@tontine.local'
         ], [
             'name' => 'Secrétaire Demo',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('password123'),
             'email_verified_at' => now(),
         ]);
         $secretary->assignRole('secretary');
@@ -44,10 +57,10 @@ class RenderDemoSeeder extends Seeder
         // Créer des agents
         for ($i = 1; $i <= 3; $i++) {
             $agent = User::firstOrCreate([
-                'email' => "agent{$i}@tontine-app.com"
+                'email' => "agent{$i}@tontine.local"
             ], [
                 'name' => "Agent Demo {$i}",
-                'password' => Hash::make('password'),
+                'password' => Hash::make('password123'),
                 'email_verified_at' => now(),
             ]);
             $agent->assignRole('agent');
@@ -141,8 +154,8 @@ class RenderDemoSeeder extends Seeder
         }
 
         $this->command->info('🎉 Données de démonstration créées avec succès!');
-        $this->command->info('👤 Admin: admin@tontine-app.com / password');
-        $this->command->info('👤 Secrétaire: secretary@tontine-app.com / password');
-        $this->command->info('👤 Agents: agent1@tontine-app.com / password (1-3)');
+        $this->command->info('👤 Admin: admin@tontine.local / password123');
+        $this->command->info('👤 Secrétaire: secretary@tontine.local / password123');
+        $this->command->info('👤 Agents: agent1@tontine.local / password123 (1-3)');
     }
 }

@@ -75,8 +75,9 @@ try {
 echo "📊 Exécution des migrations..."
 php artisan migrate --force || echo "❌ Migration échouée"
 
-echo "🌱 Exécution des seeders..."
-php artisan db:seed --force --class=RenderDemoSeeder || echo "❌ Seeding échoué"
+echo "🌱 Exécution des seeders (nettoyage + création)..."
+php artisan db:seed --force --class=RenderDemoSeeder
+echo "✅ Seeding terminé"
 
 # Cache et optimisations
 echo "⚡ Optimisations Laravel..."
