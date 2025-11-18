@@ -164,8 +164,8 @@
                         <div :class="message.is_own ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'" 
                             class="max-w-[280px] md:max-w-xs lg:max-w-md px-3 md:px-4 py-2 rounded-2xl">
                             <div x-show="!message.is_own" class="flex items-center space-x-2 mb-1">
-                                <img :src="message.user.avatar" :alt="message.user.name" class="w-6 h-6 rounded-full">
-                                <span class="text-xs font-medium" x-text="message.user.name"></span>
+                                <img :src="message.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.user?.name || 'User')}&background=random&size=24`" :alt="message.user?.name || 'User'" class="w-6 h-6 rounded-full">
+                                <span class="text-xs font-medium" x-text="message.user?.name || 'Utilisateur'"></span>
                             </div>
                             <p class="text-sm" x-text="message.content"></p>
                             <div class="flex items-center justify-between mt-1">
@@ -278,10 +278,10 @@
                     <template x-for="user in availableUsers" :key="user.id">
                         <div @click="startConversation(user)" 
                             class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                            <img :src="user.avatar" :alt="user.name" class="w-10 h-10 rounded-full">
+                            <img :src="user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random&size=40`" :alt="user.name || 'User'" class="w-10 h-10 rounded-full">
                             <div class="flex-1">
-                                <h4 class="text-sm font-medium text-gray-900" x-text="user.name"></h4>
-                                <p class="text-xs text-gray-500 capitalize" x-text="user.role"></p>
+                                <h4 class="text-sm font-medium text-gray-900" x-text="user.name || 'Utilisateur'"></h4>
+                                <p class="text-xs text-gray-500 capitalize" x-text="user.role || 'utilisateur'"></p>
                             </div>
                             <div x-show="user.is_online" class="w-3 h-3 bg-green-400 rounded-full"></div>
                         </div>

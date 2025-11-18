@@ -51,14 +51,37 @@
         <style>
             body { font-family: 'Inter', sans-serif; }
             [x-cloak] { display: none !important; }
+            
+            /* Animations pour les notifications */
+            @keyframes slideInDown {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, -100%, 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+            }
+            
+            @keyframes slideOutUp {
+                from {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translate3d(0, -100%, 0);
+                }
+            }
         </style>
     </head>
     <body class="font-sans antialiased bg-gray-50" data-theme="{{ $themeVars['theme_mode'] ?? 'light' }}">
         <!-- Notifications centrées -->
         <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2">
-            <!-- Messages de session -->
+            <!-- Messages de session avec auto-suppression -->
             @if(session('success'))
-                <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
+                <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg session-message" style="animation: slideInDown 0.5s ease-out">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
@@ -74,7 +97,7 @@
             @endif
             
             @if(session('error'))
-                <div class="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
+                <div class="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg session-message" style="animation: slideInDown 0.5s ease-out">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
@@ -408,14 +431,14 @@
         
         // Auto-hide session messages
         document.addEventListener('DOMContentLoaded', function() {
-            const sessionMessages = document.querySelectorAll('#toast-container > div:not(.toast-item)');
+            const sessionMessages = document.querySelectorAll('.session-message');
             sessionMessages.forEach(message => {
                 setTimeout(() => {
                     if (message.parentNode) {
                         message.style.animation = 'slideOutUp 0.5s ease-in';
                         setTimeout(() => message.remove(), 500);
                     }
-                }, 5000);
+                }, 4000); // Suppression après 4 secondes
             });
         });
 
@@ -496,50 +519,7 @@
             }
         });
 
-        // Indicateur de statut en ligne/hors ligne
-        function createOnlineIndicator() {
-            const indicator = document.createElement('div');
-            indicator.id = 'online-indicator';
-            indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300';
-            
-            function updateStatus() {
-                if (navigator.onLine) {
-                    indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300 bg-green-500 text-white';
-                    indicator.innerHTML = '● En ligne';
-                } else {
-                    indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300 bg-red-500 text-white animate-pulse';
-                    indicator.innerHTML = '● Hors ligne';
-                }
-            }
-            
-            updateStatus();
-            document.body.appendChild(indicator);
-            
-            // Masquer après 3 secondes si en ligne
-            if (navigator.onLine) {
-                setTimeout(() => {
-                    if (indicator && indicator.parentNode && navigator.onLine) {
-                        indicator.style.opacity = '0';
-                        setTimeout(() => {
-                            if (indicator && indicator.parentNode) {
-                                indicator.remove();
-                            }
-                        }, 300);
-                    }
-                }, 3000);
-            }
-            
-            window.addEventListener('online', updateStatus);
-            window.addEventListener('offline', updateStatus);
-        }
-
-        // Créer l'indicateur au chargement
-        document.addEventListener('DOMContentLoaded', createOnlineIndicator);
-
-        // Gérer la synchronisation en background (quand on revient en ligne)
-        window.addEventListener('online', () => {
-            // Ici on pourrait ajouter la logique de synchronisation des données en attente
-        });
+        // Indicateur de statut supprimé sur demande utilisateur
     </script>
 </body>
 </html>
