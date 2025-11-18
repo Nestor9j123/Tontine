@@ -25,10 +25,17 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'password' => 'required|string|min:8',
             'role' => 'required|in:agent,secretary',
             'is_active' => 'boolean',
         ]);
+
+        // Gérer l'upload de la photo
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('users', 'public');
+            $validated['photo'] = $photoPath;
+        }
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $request->has('is_active');
@@ -50,9 +57,22 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'phone' => 'nullable|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'password' => 'nullable|string|min:8',
             'is_active' => 'boolean',
         ]);
+
+        // Gérer l'upload de la nouvelle photo
+        if ($request->hasFile('photo')) {
+            // Supprimer l'ancienne photo si elle existe
+            if ($user->photo && \Storage::disk('public')->exists($user->photo)) {
+                \Storage::disk('public')->delete($user->photo);
+            }
+            
+            // Uploader la nouvelle photo
+            $photoPath = $request->file('photo')->store('users', 'public');
+            $validated['photo'] = $photoPath;
+        }
 
         if ($request->filled('password')) {
             $validated['password'] = Hash::make($validated['password']);

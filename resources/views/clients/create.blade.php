@@ -70,8 +70,31 @@
                         <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
                             Téléphone <span class="text-red-500">*</span>
                         </label>
-                        <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" required placeholder="+237 6XX XXX XXX"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('phone') border-red-500 @enderror">
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm">
+                                +228
+                            </span>
+                            <input type="tel" name="phone_digits" id="phone_digits" 
+                                   value="{{ old('phone_digits', old('phone') ? preg_replace('/^\+228(\d{2})(\d{2})(\d{2})(\d{2})$/', '$1 $2 $3 $4', old('phone')) : '') }}" 
+                                   required placeholder="12 34 56 78" maxlength="11" pattern="[0-9]{2}\s[0-9]{2}\s[0-9]{2}\s[0-9]{2}"
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('phone') border-red-500 @enderror"
+                                   x-data="{ formatPhone(event) { 
+                                       let value = event.target.value.replace(/\D/g, '');
+                                       if (value.length > 8) value = value.slice(0, 8);
+                                       if (value.length >= 2) value = value.slice(0,2) + ' ' + value.slice(2);
+                                       if (value.length >= 6) value = value.slice(0,5) + ' ' + value.slice(5);
+                                       if (value.length >= 9) value = value.slice(0,8) + ' ' + value.slice(8);
+                                       event.target.value = value;
+                                   }}"
+                                   @input="formatPhone($event); $el.nextElementSibling.value = '+228' + $event.target.value.replace(/\s/g, '')"
+                                   @blur="if($event.target.value.replace(/\D/g, '').length !== 8) { $event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres'); } else { $event.target.setCustomValidity(''); }"
+                                   @invalid="$event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres')"
+                                   minlength="11">
+                            <input type="hidden" name="phone" x-data="{}" 
+                                   x-init="$nextTick(() => { $el.value = '+228' + $el.previousElementSibling.value.replace(/\s/g, ''); });"
+                                   x-on:input.window="if($event.target === $el.previousElementSibling) { $el.value = '+228' + $event.target.value.replace(/\s/g, ''); }">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Format: 12 34 56 78 (8 chiffres)</p>
                         @error('phone')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -82,8 +105,30 @@
                         <label for="phone_secondary" class="block text-sm font-medium text-gray-700 mb-2">
                             Téléphone Secondaire
                         </label>
-                        <input type="tel" name="phone_secondary" id="phone_secondary" value="{{ old('phone_secondary') }}" placeholder="+237 6XX XXX XXX"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm">
+                                +228
+                            </span>
+                            <input type="tel" name="phone_secondary_digits" id="phone_secondary_digits" 
+                                   value="{{ old('phone_secondary_digits', old('phone_secondary') ? preg_replace('/^\+228(\d{2})(\d{2})(\d{2})(\d{2})$/', '$1 $2 $3 $4', old('phone_secondary')) : '') }}" 
+                                   placeholder="12 34 56 78" maxlength="11" pattern="[0-9]{2}\s[0-9]{2}\s[0-9]{2}\s[0-9]{2}"
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   x-data="{ formatPhone(event) { 
+                                       let value = event.target.value.replace(/\D/g, '');
+                                       if (value.length > 8) value = value.slice(0, 8);
+                                       if (value.length >= 2) value = value.slice(0,2) + ' ' + value.slice(2);
+                                       if (value.length >= 6) value = value.slice(0,5) + ' ' + value.slice(5);
+                                       if (value.length >= 9) value = value.slice(0,8) + ' ' + value.slice(8);
+                                       event.target.value = value;
+                                   }}"
+                                   @input="formatPhone($event); $el.nextElementSibling.value = $event.target.value ? '+228' + $event.target.value.replace(/\s/g, '') : ''"
+                                   @blur="if($event.target.value && $event.target.value.replace(/\D/g, '').length !== 8) { $event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres'); } else { $event.target.setCustomValidity(''); }"
+                                   @invalid="$event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres')">
+                            <input type="hidden" name="phone_secondary" x-data="{}" 
+                                   x-init="$nextTick(() => { $el.value = $el.previousElementSibling.value ? '+228' + $el.previousElementSibling.value.replace(/\s/g, '') : ''; });"
+                                   x-on:input.window="if($event.target === $el.previousElementSibling) { $el.value = $event.target.value ? '+228' + $event.target.value.replace(/\s/g, '') : ''; }">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Optionnel - Format: 12 34 56 78 (8 chiffres)</p>
                     </div>
 
                     {{-- Email --}}
@@ -158,15 +203,41 @@
                 @endif
 
                 {{-- Section Paiements Existants --}}
-                <div class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg" x-data="{ hasExistingPayments: {{ old('has_existing_payments') ? 'true' : 'false' }} }">
+                <div class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg" x-data="{ 
+                    hasExistingPayments: {{ old('has_existing_payments') ? 'true' : 'false' }},
+                    tontines: [
+                        {
+                            product_id: '{{ old('existing_tontines.0.product_id') }}',
+                            payments_count: '{{ old('existing_tontines.0.payments_count') }}',
+                            payments_amount: '{{ old('existing_tontines.0.payments_amount') }}',
+                            start_date: '{{ old('existing_tontines.0.start_date') }}',
+                            notes: '{{ old('existing_tontines.0.notes') }}'
+                        }
+                    ],
+                    addTontine() {
+                        this.tontines.push({
+                            product_id: '',
+                            payments_count: '',
+                            payments_amount: '',
+                            start_date: '',
+                            notes: ''
+                        });
+                    },
+                    removeTontine(index) {
+                        if(this.tontines.length > 1) {
+                            this.tontines.splice(index, 1);
+                        }
+                    }
+                }">
                     <div class="flex items-center mb-4">
                         <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <h4 class="text-lg font-semibold text-yellow-800">Paiements Existants</h4>
+                        <h3 class="text-lg font-semibold text-yellow-800">Tontines Existantes</h3>
                     </div>
+                    
                     <p class="text-sm text-yellow-700 mb-4">
-                        Si ce client payait déjà avant l'utilisation du système (ex: déjà à 8 mois sur 12), cochez cette case et remplissez les informations.
+                        Si ce client payait déjà des tontines avant son enregistrement dans le système, cochez cette option et ajoutez chaque tontine avec ses détails.
                     </p>
                     
                     <div class="mb-4">
@@ -179,60 +250,88 @@
                         </label>
                     </div>
 
-                    <div x-show="hasExistingPayments" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Nombre de paiements déjà effectués --}}
-                        <div>
-                            <label for="existing_payments_count" class="block text-sm font-medium text-gray-700 mb-2">
-                                Nombre de paiements déjà effectués
-                            </label>
-                            <input type="number" name="existing_payments_count" id="existing_payments_count" 
-                                value="{{ old('existing_payments_count') }}" min="1" max="36"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="8">
-                            @error('existing_payments_count')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                    <div x-show="hasExistingPayments" x-transition class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-md font-medium text-yellow-800">Liste des Tontines Existantes</h4>
+                            <button type="button" @click="addTontine()" class="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700">
+                                + Ajouter une Tontine
+                            </button>
                         </div>
 
-                        {{-- Montant déjà payé --}}
-                        <div>
-                            <label for="existing_payments_amount" class="block text-sm font-medium text-gray-700 mb-2">
-                                Montant total déjà payé (FCFA)
-                            </label>
-                            <input type="number" name="existing_payments_amount" id="existing_payments_amount" 
-                                value="{{ old('existing_payments_amount') }}" min="0"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="40000">
-                            @error('existing_payments_amount')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <template x-for="(tontine, index) in tontines" :key="index">
+                            <div class="border border-yellow-300 rounded-lg p-4 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h5 class="font-medium text-yellow-800" x-text="'Tontine ' + (index + 1)"></h5>
+                                    <button type="button" @click="removeTontine(index)" 
+                                            x-show="tontines.length > 1"
+                                            class="text-red-600 hover:text-red-800 text-sm">
+                                        ✕ Supprimer
+                                    </button>
+                                </div>
 
-                        {{-- Date de début des paiements --}}
-                        <div>
-                            <label for="existing_payments_start_date" class="block text-sm font-medium text-gray-700 mb-2">
-                                Date de début des paiements
-                            </label>
-                            <input type="date" name="existing_payments_start_date" id="existing_payments_start_date" 
-                                value="{{ old('existing_payments_start_date') }}"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
-                            @error('existing_payments_start_date')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {{-- Produit/Tontine --}}
+                                    <div class="md:col-span-2">
+                                        <label :for="'existing_tontines_' + index + '_product_id'" class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="text-red-500">*</span> Produit/Tontine
+                                        </label>
+                                        <select :name="'existing_tontines[' + index + '][product_id]'" :id="'existing_tontines_' + index + '_product_id'" 
+                                                x-model="tontine.product_id" :required="hasExistingPayments" :disabled="!hasExistingPayments"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                            <option value="">Sélectionnez le produit/tontine</option>
+                                            @foreach($products as $product)
+                                                <option value="{{ $product->id }}">
+                                                    {{ $product->name }} - {{ number_format($product->price, 0, ',', ' ') }} FCFA
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
-                        {{-- Notes --}}
-                        <div>
-                            <label for="existing_payments_notes" class="block text-sm font-medium text-gray-700 mb-2">
-                                Notes sur les paiements existants
-                            </label>
-                            <textarea name="existing_payments_notes" id="existing_payments_notes" rows="3"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                                placeholder="Détails sur les paiements déjà effectués...">{{ old('existing_payments_notes') }}</textarea>
-                            @error('existing_payments_notes')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                                    {{-- Nombre de paiements --}}
+                                    <div>
+                                        <label :for="'existing_tontines_' + index + '_payments_count'" class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="text-red-500">*</span> Nombre de paiements effectués
+                                        </label>
+                                        <input type="number" :name="'existing_tontines[' + index + '][payments_count]'" :id="'existing_tontines_' + index + '_payments_count'" 
+                                               x-model="tontine.payments_count" min="1" max="36" :required="hasExistingPayments" :disabled="!hasExistingPayments"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                               placeholder="8">
+                                    </div>
+
+                                    {{-- Montant payé --}}
+                                    <div>
+                                        <label :for="'existing_tontines_' + index + '_payments_amount'" class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="text-red-500">*</span> Montant payé (FCFA)
+                                        </label>
+                                        <input type="number" :name="'existing_tontines[' + index + '][payments_amount]'" :id="'existing_tontines_' + index + '_payments_amount'" 
+                                               x-model="tontine.payments_amount" min="0" :required="hasExistingPayments" :disabled="!hasExistingPayments"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                               placeholder="40000">
+                                    </div>
+
+                                    {{-- Date de début --}}
+                                    <div>
+                                        <label :for="'existing_tontines_' + index + '_start_date'" class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="text-red-500">*</span> Date de début
+                                        </label>
+                                        <input type="date" :name="'existing_tontines[' + index + '][start_date]'" :id="'existing_tontines_' + index + '_start_date'" 
+                                               x-model="tontine.start_date" :required="hasExistingPayments" :disabled="!hasExistingPayments"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                                    </div>
+
+                                    {{-- Notes --}}
+                                    <div>
+                                        <label :for="'existing_tontines_' + index + '_notes'" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Notes
+                                        </label>
+                                        <textarea :name="'existing_tontines[' + index + '][notes]'" :id="'existing_tontines_' + index + '_notes'" 
+                                                  x-model="tontine.notes" rows="3" :disabled="!hasExistingPayments"
+                                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                                                  placeholder="Détails sur cette tontine..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
 

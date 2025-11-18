@@ -263,7 +263,7 @@
                         <label for="photos" class="block text-sm font-medium text-gray-700 mb-2">
                             Photos du produit
                         </label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors" x-data="photoUpload()">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                             </svg>
@@ -272,11 +272,48 @@
                                     <span class="mt-2 block text-sm font-medium text-gray-900">
                                         Cliquez pour ajouter des photos
                                     </span>
-                                    <input type="file" id="photos" name="photos[]" accept="image/*" multiple class="hidden">
+                                    <input type="file" 
+                                           id="photos" 
+                                           name="photos[]" 
+                                           accept="image/*" 
+                                           multiple 
+                                           class="hidden"
+                                           @change="handleFiles($event)">
                                 </label>
                                 <p class="mt-2 text-xs text-gray-500">
-                                    JPG, PNG, GIF jusqu'à 2MB chacune. La première sera la photo principale.
+                                    JPG, PNG, GIF, WebP jusqu'à 2MB chacune. La première sera la photo principale.
                                 </p>
+                            </div>
+                            
+                            <!-- Prévisualisation des photos sélectionnées -->
+                            <div x-show="selectedFiles.length > 0" class="mt-6">
+                                <p class="text-sm font-medium text-gray-700 mb-3">Photos sélectionnées :</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    <template x-for="(file, index) in selectedFiles" :key="index">
+                                        <div class="relative group">
+                                            <img :src="file.url" :alt="file.name" class="w-full h-24 object-cover rounded-lg border-2 border-gray-200">
+                                            
+                                            <!-- Badge photo principale -->
+                                            <span x-show="index === 0" class="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                                Principal
+                                            </span>
+                                            
+                                            <!-- Bouton supprimer -->
+                                            <button type="button" 
+                                                    @click="removeFile(index)"
+                                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-sm hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100">
+                                                ×
+                                            </button>
+                                            
+                                            <!-- Info fichier -->
+                                            <div class="absolute bottom-1 left-1 right-1 bg-black bg-opacity-70 text-white text-xs p-1 rounded">
+                                                <div class="truncate" x-text="file.name"></div>
+                                                <div x-text="file.size"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <p class="mt-2 text-sm text-blue-600" x-text="`${selectedFiles.length} photo(s) sélectionnée(s)`"></p>
                             </div>
                         </div>
                         @error('photos')
@@ -467,6 +504,65 @@
                     @endif
                 }
             }
+        }
+
+        function photoUpload() {
+            return {
+                selectedFiles: [],
+
+                handleFiles(event) {
+                    const files = Array.from(event.target.files);
+                    
+                    // Vider la liste précédente
+                    this.selectedFiles = [];
+                    
+                    files.forEach(file => {
+                        // Validation avec helper
+                        if (!window.validateImageFile(file)) {
+                            return;
+                        }
+                        
+                        // Créer URL pour prévisualisation
+                        const fileUrl = URL.createObjectURL(file);
+                        
+                        this.selectedFiles.push({
+                            file: file,
+                            name: file.name,
+                            url: fileUrl,
+                            size: window.formatFileSize(file.size)
+                        });
+                    });
+                    
+                    if (this.selectedFiles.length > 0) {
+                        window.safeShowSuccess(`${this.selectedFiles.length} photo(s) sélectionnée(s)`);
+                    }
+                },
+
+                removeFile(index) {
+                    // Nettoyer l'URL de l'objet
+                    if (this.selectedFiles[index] && this.selectedFiles[index].url) {
+                        URL.revokeObjectURL(this.selectedFiles[index].url);
+                    }
+                    
+                    this.selectedFiles.splice(index, 1);
+                    
+                    // Mettre à jour l'input file
+                    this.updateFileInput();
+                },
+
+                updateFileInput() {
+                    // Créer un nouveau DataTransfer pour mettre à jour l'input
+                    const dt = new DataTransfer();
+                    this.selectedFiles.forEach(fileObj => {
+                        dt.items.add(fileObj.file);
+                    });
+                    
+                    const input = document.getElementById('photos');
+                    if (input) {
+                        input.files = dt.files;
+                    }
+                }
+            };
         }
     </script>
 </x-app-layout>

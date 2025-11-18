@@ -85,9 +85,15 @@
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-4 py-2 border border-white border-opacity-30 text-sm leading-4 font-medium rounded-md text-white bg-white bg-opacity-10 hover:bg-opacity-20 focus:outline-none transition ease-in-out duration-150">
                             <div class="flex items-center">
-                                <div class="w-8 h-8 rounded-full bg-white bg-opacity-30 flex items-center justify-center mr-2">
-                                    <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                                </div>
+                                @if(Auth::user()->photo)
+                                    <img src="{{ asset('storage/' . Auth::user()->photo) }}" 
+                                         alt="{{ Auth::user()->name }}" 
+                                         class="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white border-opacity-50">
+                                @else
+                                    <div class="w-8 h-8 rounded-full bg-white bg-opacity-30 flex items-center justify-center mr-2">
+                                        <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                                    </div>
+                                @endif
                                 <div>{{ Auth::user()->name }}</div>
                             </div>
 

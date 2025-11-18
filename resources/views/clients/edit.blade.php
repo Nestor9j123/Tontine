@@ -54,8 +54,31 @@
                         <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
                             Téléphone <span class="text-red-500">*</span>
                         </label>
-                        <input type="tel" name="phone" id="phone" value="{{ old('phone', $client->phone) }}" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('phone') border-red-500 @enderror">
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm">
+                                +228
+                            </span>
+                            <input type="tel" name="phone_digits" id="phone_digits" 
+                                   value="{{ old('phone_digits', $client->phone ? preg_replace('/^\+228(\d{2})(\d{2})(\d{2})(\d{2})$/', '$1 $2 $3 $4', $client->phone) : '') }}" 
+                                   required placeholder="12 34 56 78" maxlength="11" pattern="[0-9]{2}\s[0-9]{2}\s[0-9]{2}\s[0-9]{2}"
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('phone') border-red-500 @enderror"
+                                   x-data="{ formatPhone(event) { 
+                                       let value = event.target.value.replace(/\D/g, '');
+                                       if (value.length > 8) value = value.slice(0, 8);
+                                       if (value.length >= 2) value = value.slice(0,2) + ' ' + value.slice(2);
+                                       if (value.length >= 6) value = value.slice(0,5) + ' ' + value.slice(5);
+                                       if (value.length >= 9) value = value.slice(0,8) + ' ' + value.slice(8);
+                                       event.target.value = value;
+                                   }}"
+                                   @input="formatPhone($event); $el.nextElementSibling.value = '+228' + $event.target.value.replace(/\s/g, '')"
+                                   @blur="if($event.target.value.replace(/\D/g, '').length !== 8) { $event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres'); } else { $event.target.setCustomValidity(''); }"
+                                   @invalid="$event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres')"
+                                   minlength="11">
+                            <input type="hidden" name="phone" x-data="{}" 
+                                   x-init="$nextTick(() => { $el.value = '+228' + $el.previousElementSibling.value.replace(/\s/g, ''); });"
+                                   x-on:input.window="if($event.target === $el.previousElementSibling) { $el.value = '+228' + $event.target.value.replace(/\s/g, ''); }">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Format: 12 34 56 78 (8 chiffres)</p>
                         @error('phone')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -66,8 +89,30 @@
                         <label for="phone_secondary" class="block text-sm font-medium text-gray-700 mb-2">
                             Téléphone Secondaire
                         </label>
-                        <input type="tel" name="phone_secondary" id="phone_secondary" value="{{ old('phone_secondary', $client->phone_secondary) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm">
+                                +228
+                            </span>
+                            <input type="tel" name="phone_secondary_digits" id="phone_secondary_digits" 
+                                   value="{{ old('phone_secondary_digits', $client->phone_secondary ? preg_replace('/^\+228(\d{2})(\d{2})(\d{2})(\d{2})$/', '$1 $2 $3 $4', $client->phone_secondary) : '') }}" 
+                                   placeholder="12 34 56 78" maxlength="11" pattern="[0-9]{2}\s[0-9]{2}\s[0-9]{2}\s[0-9]{2}"
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   x-data="{ formatPhone(event) { 
+                                       let value = event.target.value.replace(/\D/g, '');
+                                       if (value.length > 8) value = value.slice(0, 8);
+                                       if (value.length >= 2) value = value.slice(0,2) + ' ' + value.slice(2);
+                                       if (value.length >= 6) value = value.slice(0,5) + ' ' + value.slice(5);
+                                       if (value.length >= 9) value = value.slice(0,8) + ' ' + value.slice(8);
+                                       event.target.value = value;
+                                   }}"
+                                   @input="formatPhone($event); $el.nextElementSibling.value = $event.target.value ? '+228' + $event.target.value.replace(/\s/g, '') : ''"
+                                   @blur="if($event.target.value && $event.target.value.replace(/\D/g, '').length !== 8) { $event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres'); } else { $event.target.setCustomValidity(''); }"
+                                   @invalid="$event.target.setCustomValidity('Le numéro doit contenir exactement 8 chiffres')">
+                            <input type="hidden" name="phone_secondary" x-data="{}" 
+                                   x-init="$nextTick(() => { $el.value = $el.previousElementSibling.value ? '+228' + $el.previousElementSibling.value.replace(/\s/g, '') : ''; });"
+                                   x-on:input.window="if($event.target === $el.previousElementSibling) { $el.value = $event.target.value ? '+228' + $event.target.value.replace(/\s/g, '') : ''; }">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Optionnel - Format: 12 34 56 78 (8 chiffres)</p>
                     </div>
 
                     {{-- Email --}}

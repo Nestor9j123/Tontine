@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query();
+        $query = Product::with('photos');
         
         // Filtrage par nom
         if ($request->has("search") && !empty($request->search)) {
@@ -49,7 +49,7 @@ class ProductController extends Controller
 
     public function lowStock(Request $request)
     {
-        $query = Product::query();
+        $query = Product::with('photos');
         
         // Filtrer seulement les produits en stock faible ou rupture
         $query->where('is_active', true)
@@ -72,6 +72,22 @@ class ProductController extends Controller
         $showingLowStock = true;
         
         return view("products.index", compact("products", "showingLowStock"));
+    }
+
+    public function show(Product $product)
+    {
+        // Récupérer le produit avec ses photos
+        $product->load('photos');
+        
+        // Récupérer les produits similaires (même type, excluant le produit actuel)
+        $similarProducts = Product::where('type', $product->type)
+            ->where('id', '!=', $product->id)
+            ->where('is_active', true)
+            ->with('photos')
+            ->limit(4)
+            ->get();
+        
+        return view('products.show', compact('product', 'similarProducts'));
     }
 
     public function create()
@@ -135,8 +151,9 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'price' => 'required|numeric|min:1',
+            'purchase_price' => 'nullable|numeric|min:0',
             'duration_value' => 'required|integer|min:1',
             'duration_unit' => 'required|in:days,weeks,months,years',
             'type' => 'required|in:daily,weekly,monthly,yearly',
@@ -144,16 +161,9 @@ class ProductController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
         
-        // Gérer l'upload de la nouvelle photo
-        if ($request->hasFile('photo')) {
-            // Supprimer l'ancienne photo si elle existe
-            if ($product->photo && \Storage::disk('public')->exists($product->photo)) {
-                \Storage::disk('public')->delete($product->photo);
-            }
-            
-            // Uploader la nouvelle photo
-            $photoPath = $request->file('photo')->store('products', 'public');
-            $validated['photo'] = $photoPath;
+        // Calculer la marge bénéficiaire si prix d'achat fourni
+        if (!empty($validated['purchase_price']) && $validated['purchase_price'] > 0) {
+            $validated['profit_margin'] = (($validated['price'] - $validated['purchase_price']) / $validated['purchase_price']) * 100;
         }
         
         // Calculer duration_months pour compatibilité
@@ -164,6 +174,24 @@ class ProductController extends Controller
         unset($validated['status']); // Supprimer le champ status car on utilise is_active
         
         $product->update($validated);
+        
+        // Gérer l'upload des nouvelles photos
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $index => $photo) {
+                $photoPath = $photo->store('products', 'public');
+                
+                // Si c'est la première photo et qu'il n'y a pas encore de photo principale, la marquer comme principale
+                $isFirst = $index === 0;
+                $hasPrimary = $product->photos()->where('is_primary', true)->exists();
+                
+                \App\Models\ProductPhoto::create([
+                    'product_id' => $product->id,
+                    'path' => $photoPath,
+                    'is_primary' => $isFirst && !$hasPrimary,
+                    'order' => $product->photos()->count() + $index,
+                ]);
+            }
+        }
 
         return redirect()->route('products.index')->with('success', 'Produit mis à jour !');
     }

@@ -59,7 +59,8 @@ class ClientController extends Controller
      */
     public function create()
     {
-        return view('clients.create');
+        $products = \App\Models\Product::active()->orderBy('name')->get();
+        return view('clients.create', compact('products'));
     }
 
     /**
@@ -71,8 +72,8 @@ class ClientController extends Controller
         $rules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone' => 'required|string|unique:clients,phone',
-            'phone_secondary' => 'nullable|string',
+            'phone' => 'required|string|unique:clients,phone|regex:/^\+228[0-9]{8}$/|size:12',
+            'phone_secondary' => 'nullable|string|regex:/^\+228[0-9]{8}$/|size:12',
             'email' => 'nullable|email|unique:clients,email',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',
@@ -80,10 +81,12 @@ class ClientController extends Controller
             'photo' => 'nullable|image|max:2048',
             'is_active' => 'boolean',
             'has_existing_payments' => 'boolean',
-            'existing_payments_count' => 'nullable|integer|min:1|max:36',
-            'existing_payments_amount' => 'nullable|numeric|min:0',
-            'existing_payments_start_date' => 'nullable|date',
-            'existing_payments_notes' => 'nullable|string|max:1000',
+            'existing_tontines' => 'nullable|required_if:has_existing_payments,1|array',
+            'existing_tontines.*.product_id' => 'required_with:existing_tontines|exists:products,id',
+            'existing_tontines.*.payments_count' => 'required_with:existing_tontines|integer|min:1|max:36',
+            'existing_tontines.*.payments_amount' => 'required_with:existing_tontines|numeric|min:0',
+            'existing_tontines.*.start_date' => 'required_with:existing_tontines|date',
+            'existing_tontines.*.notes' => 'nullable|string|max:1000',
         ];
         
         // agent_id requis seulement pour admin/secrétaire
@@ -91,7 +94,12 @@ class ClientController extends Controller
             $rules['agent_id'] = 'required|exists:users,id';
         }
         
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'phone.regex' => 'Le numéro de téléphone doit être au format +228 suivi de 8 chiffres.',
+            'phone.size' => 'Le numéro de téléphone doit contenir exactement 8 chiffres après +228.',
+            'phone_secondary.regex' => 'Le numéro de téléphone secondaire doit être au format +228 suivi de 8 chiffres.',
+            'phone_secondary.size' => 'Le numéro de téléphone secondaire doit contenir exactement 8 chiffres après +228.',
+        ]);
 
         // Si c'est un agent, forcer son ID
         if (auth()->user()->hasRole('agent')) {
@@ -107,10 +115,28 @@ class ClientController extends Controller
 
         $client = Client::create($validated);
 
+        // Si le client a des paiements existants, créer les tontines et les paiements
+        $tontinesCreated = 0;
+        if ($request->has('has_existing_payments') && $request->has('existing_tontines')) {
+            try {
+                $tontinesCreated = $this->createExistingTontinesAndPayments($client, $validated);
+            } catch (\Exception $e) {
+                // En cas d'erreur, log et continuer avec un message d'avertissement
+                \Log::error('Erreur lors de la création des tontines existantes: ' . $e->getMessage());
+            }
+        }
+
         // Logger l'activité
         \App\Models\ActivityLog::log('create', 'Client', $client->id, null, $validated);
 
-        return redirect()->route('clients.index')->with('success', 'Client créé avec succès !');
+        $message = 'Client créé avec succès !';
+        if ($request->has('has_existing_payments') && $tontinesCreated > 0) {
+            $message .= " {$tontinesCreated} tontine(s) et leurs paiements existants ont été enregistrés.";
+        } elseif ($request->has('has_existing_payments') && $tontinesCreated === 0) {
+            $message .= " Attention: Aucune tontine n'a pu être créée à partir des données fournies.";
+        }
+
+        return redirect()->route('clients.index')->with('success', $message);
     }
 
     /**
@@ -127,7 +153,8 @@ class ClientController extends Controller
      */
     public function edit(Client $client)
     {
-        return view('clients.edit', compact('client'));
+        $products = \App\Models\Product::active()->orderBy('name')->get();
+        return view('clients.edit', compact('client', 'products'));
     }
 
     /**
@@ -139,8 +166,8 @@ class ClientController extends Controller
         $rules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone' => 'required|string|unique:clients,phone,' . $client->id,
-            'phone_secondary' => 'nullable|string',
+            'phone' => 'required|string|unique:clients,phone,' . $client->id . '|regex:/^\+228[0-9]{8}$/|size:12',
+            'phone_secondary' => 'nullable|string|regex:/^\+228[0-9]{8}$/|size:12',
             'email' => 'nullable|email|unique:clients,email,' . $client->id,
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',
@@ -154,7 +181,12 @@ class ClientController extends Controller
             $rules['agent_id'] = 'required|exists:users,id';
         }
         
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'phone.regex' => 'Le numéro de téléphone doit être au format +228 suivi de 8 chiffres.',
+            'phone.size' => 'Le numéro de téléphone doit contenir exactement 8 chiffres après +228.',
+            'phone_secondary.regex' => 'Le numéro de téléphone secondaire doit être au format +228 suivi de 8 chiffres.',
+            'phone_secondary.size' => 'Le numéro de téléphone secondaire doit contenir exactement 8 chiffres après +228.',
+        ]);
 
         // Si c'est un agent, forcer son ID
         if (auth()->user()->hasRole('agent')) {
@@ -198,5 +230,76 @@ class ClientController extends Controller
         \App\Models\ActivityLog::log('delete', 'Client', $client->id, $oldValues, null);
 
         return redirect()->route('clients.index')->with('success', 'Client supprimé avec succès !');
+    }
+
+    /**
+     * Créer automatiquement les tontines et les paiements existants d'un client
+     * @return int Nombre de tontines créées avec succès
+     */
+    private function createExistingTontinesAndPayments(Client $client, array $validated)
+    {
+        if (!isset($validated['existing_tontines']) || !is_array($validated['existing_tontines'])) {
+            return 0;
+        }
+
+        $tontinesCreated = 0;
+        foreach ($validated['existing_tontines'] as $tontineData) {
+            $product = \App\Models\Product::find($tontineData['product_id']);
+            
+            if (!$product) {
+                continue; // Passer à la tontine suivante
+            }
+
+            // Calculer la date de fin basée sur la durée du produit
+            $startDate = new \Carbon\Carbon($tontineData['start_date']);
+            $endDate = $startDate->copy()->addDays($product->duration_days);
+
+            // Créer la tontine avec TOUS les champs requis
+            $tontine = \App\Models\Tontine::create([
+                'code' => 'TON-EX-' . strtoupper(uniqid()), // Code unique
+                'client_id' => $client->id,
+                'product_id' => $product->id,
+                'agent_id' => $client->agent_id,
+                'status' => 'active',
+                'total_amount' => $product->price,
+                'paid_amount' => $tontineData['payments_amount'],
+                'remaining_amount' => $product->price - $tontineData['payments_amount'],
+                'total_payments' => $tontineData['payments_count'],
+                'completed_payments' => $tontineData['payments_count'], // Paiements déjà effectués
+                'start_date' => $tontineData['start_date'],
+                'end_date' => $endDate,
+                'notes' => 'Tontine créée automatiquement lors de l\'ajout du client avec paiements existants. ' . ($tontineData['notes'] ?? ''),
+            ]);
+
+            // Créer les paiements existants pour cette tontine
+            if ($tontineData['payments_count'] > 0 && $tontineData['payments_amount'] > 0) {
+                $amountPerPayment = $tontineData['payments_amount'] / $tontineData['payments_count'];
+                
+                for ($i = 0; $i < $tontineData['payments_count']; $i++) {
+                    \App\Models\Payment::create([
+                        'reference' => 'PAY-EX-' . strtoupper(uniqid()), // Référence unique
+                        'client_id' => $client->id,
+                        'tontine_id' => $tontine->id,
+                        'collected_by' => $client->agent_id, // Agent qui a collecté
+                        'amount' => $amountPerPayment,
+                        'payment_date' => $startDate->copy()->addDays($i * 30), // Approximation mensuelle
+                        'payment_method' => 'cash', // Correct field name
+                        'status' => 'validated', // Correct status value
+                        'validated_by' => auth()->id(), // Qui valide l'import
+                        'validated_at' => now(), // Date de validation
+                        'notes' => 'Paiement existant importé automatiquement pour ' . $product->name,
+                    ]);
+                }
+            }
+
+            // Mettre à jour le statut de la tontine si complète
+            if ($tontine->remaining_amount <= 0) {
+                $tontine->update(['status' => 'completed']);
+            }
+            
+            $tontinesCreated++;
+        }
+        
+        return $tontinesCreated;
     }
 }

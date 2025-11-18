@@ -18,25 +18,67 @@
                         <textarea name="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">{{ $product->description }}</textarea>
                     </div>
                     
-                    {{-- Photo du produit --}}
+                    {{-- Photos du produit --}}
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Photo du produit</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Photos du produit</label>
                         
-                        @if($product->photo)
-                            <div class="mb-3">
-                                <p class="text-sm text-gray-600 mb-2">Photo actuelle:</p>
-                                <img src="{{ asset('storage/' . $product->photo) }}" alt="{{ $product->name }}" class="w-32 h-32 object-cover rounded-lg border border-gray-300">
+                        @if($product->photos && $product->photos->count() > 0)
+                            <div class="mb-4">
+                                <p class="text-sm text-gray-600 mb-2">Photos actuelles ({{ $product->photos->count() }}):</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    @foreach($product->photos as $photo)
+                                        <div class="relative group">
+                                            <img src="{{ asset('storage/' . $photo->path) }}" 
+                                                 alt="{{ $product->name }}" 
+                                                 class="w-full h-24 object-cover rounded-lg border border-gray-300">
+                                            @if($photo->is_primary)
+                                                <span class="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                                    Principal
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         @endif
                         
-                        <input type="file" name="photo" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <p class="mt-1 text-xs text-gray-500">
-                            @if($product->photo)
-                                Choisir une nouvelle photo pour remplacer l'actuelle (JPG, PNG, GIF - max 2MB)
-                            @else
-                                Format: JPG, PNG, GIF (max 2MB)
-                            @endif
-                        </p>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors" x-data="photoUpload()">
+                            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <div class="mt-2">
+                                <label for="photos" class="cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-900">
+                                        Ajouter de nouvelles photos
+                                    </span>
+                                    <input type="file" 
+                                           id="photos" 
+                                           name="photos[]" 
+                                           accept="image/*" 
+                                           multiple 
+                                           class="hidden" 
+                                           @change="handleFiles($event)">
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    JPG, PNG, GIF, WebP jusqu'à 2MB chacune
+                                </p>
+                            </div>
+                            
+                            <!-- Prévisualisation des nouvelles photos -->
+                            <div x-show="selectedFiles.length > 0" class="mt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">Nouvelles photos à ajouter:</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <template x-for="(file, index) in selectedFiles" :key="index">
+                                        <div class="relative">
+                                            <img :src="file.url" :alt="file.name" class="w-full h-20 object-cover rounded border">
+                                            <button type="button" 
+                                                    @click="removeFile(index)"
+                                                    class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs hover:bg-red-600">×</button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div>
@@ -100,4 +142,57 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function photoUpload() {
+            return {
+                selectedFiles: [],
+
+                handleFiles(event) {
+                    const files = Array.from(event.target.files);
+                    
+                    // Vider la liste précédente
+                    this.selectedFiles = [];
+                    
+                    files.forEach(file => {
+                        // Validation avec helper
+                        if (!window.validateImageFile(file)) {
+                            return;
+                        }
+                        
+                        // Créer URL pour prévisualisation
+                        const fileUrl = URL.createObjectURL(file);
+                        
+                        this.selectedFiles.push({
+                            file: file,
+                            name: file.name,
+                            url: fileUrl,
+                            size: window.formatFileSize(file.size)
+                        });
+                    });
+                    
+                    if (this.selectedFiles.length > 0) {
+                        window.safeShowSuccess(`${this.selectedFiles.length} photo(s) sélectionnée(s)`);
+                    }
+                },
+
+                removeFile(index) {
+                    // Nettoyer l'URL de l'objet
+                    if (this.selectedFiles[index] && this.selectedFiles[index].url) {
+                        URL.revokeObjectURL(this.selectedFiles[index].url);
+                    }
+                    
+                    this.selectedFiles.splice(index, 1);
+                    
+                    // Réinitialiser l'input file si plus aucun fichier
+                    if (this.selectedFiles.length === 0) {
+                        const input = document.getElementById('photos');
+                        if (input) {
+                            input.value = '';
+                        }
+                    }
+                }
+            };
+        }
+    </script>
 </x-app-layout>

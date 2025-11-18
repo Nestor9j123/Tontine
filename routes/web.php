@@ -48,8 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     // Products
-    // Tout le monde peut voir la liste
+    // Tout le monde peut voir la liste et les détails
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
     
     // Secretary peut créer
     Route::middleware('role:secretary|super_admin')->group(function () {

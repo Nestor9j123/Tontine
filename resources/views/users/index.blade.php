@@ -41,9 +41,15 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-yellow-500 flex items-center justify-center text-white font-bold mr-3">
-                                    {{ substr($user->name, 0, 1) }}
-                                </div>
+                                @if($user->photo)
+                                    <img src="{{ asset('storage/' . $user->photo) }}" 
+                                         alt="{{ $user->name }}" 
+                                         class="w-10 h-10 rounded-full object-cover mr-3 border-2 border-gray-200">
+                                @else
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-yellow-500 flex items-center justify-center text-white font-bold mr-3">
+                                        {{ substr($user->name, 0, 1) }}
+                                    </div>
+                                @endif
                                 <div class="font-medium text-gray-900">{{ $user->name }}</div>
                             </div>
                         </td>
