@@ -21,6 +21,7 @@ use App\Http\Controllers\AgentReceiptController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +63,58 @@ Route::get('/debug', function () {
         'logs_path' => storage_path('logs'),
         'cache_path' => storage_path('framework/cache'),
     ]);
+});
+
+// Route pour créer un utilisateur admin de secours
+Route::get('/create-admin', function () {
+    try {
+        // Vérifier si l'admin existe déjà
+        $existingAdmin = DB::table('users')->where('email', 'admin@tontine.local')->first();
+        
+        if ($existingAdmin) {
+            return response()->json([
+                'status' => 'Admin already exists',
+                'email' => 'admin@tontine.local',
+                'created_at' => $existingAdmin->created_at
+            ]);
+        }
+        
+        // Créer l'admin
+        $adminId = DB::table('users')->insertGetId([
+            'name' => 'Administrateur',
+            'email' => 'admin@tontine.local',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password123'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        // Assigner le rôle super_admin si la table model_has_roles existe
+        try {
+            DB::table('model_has_roles')->insert([
+                'role_id' => 1, // Assuming super_admin is role ID 1
+                'model_type' => 'App\\Models\\User',
+                'model_id' => $adminId
+            ]);
+            $roleAssigned = 'Yes';
+        } catch (\Exception $e) {
+            $roleAssigned = 'Failed: ' . $e->getMessage();
+        }
+        
+        return response()->json([
+            'status' => 'Admin created successfully',
+            'email' => 'admin@tontine.local',
+            'password' => 'password123',
+            'user_id' => $adminId,
+            'role_assigned' => $roleAssigned
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'Error creating admin',
+            'error' => $e->getMessage()
+        ]);
+    }
 });
 
 
