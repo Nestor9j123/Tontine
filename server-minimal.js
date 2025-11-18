@@ -114,7 +114,10 @@ app.get('/', (req, res) => {
         
         <div class="install-prompt">
             <strong>📥 Installation PWA</strong><br>
-            <small>Recherchez le bouton d'installation dans votre navigateur</small>
+            <small>Recherchez le bouton d'installation dans votre navigateur</small><br>
+            <button onclick="forceInstall()" style="margin-top: 10px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                📱 Installer maintenant
+            </button>
         </div>
     </div>
 
@@ -147,6 +150,31 @@ app.get('/', (req, res) => {
             
             document.body.appendChild(installBtn);
         });
+
+        // Fonction d'installation forcée
+        window.forceInstall = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('✅ PWA installée via prompt');
+                    } else {
+                        console.log('❌ Installation PWA refusée');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // Instructions manuelles si pas de prompt
+                const instructions = 'Instructions d\\'installation:\\n\\n' +
+                    'Chrome Desktop:\\n' +
+                    '1. Menu Chrome (⋮) → "Installer Tontine App"\\n\\n' +
+                    'Chrome Mobile:\\n' +
+                    '1. Menu Chrome (⋮) → "Ajouter à l\\'écran d\\'accueil"\\n\\n' +
+                    'Safari iOS:\\n' +
+                    '1. Bouton Partager (📤) → "Ajouter à l\\'écran d\\'accueil"';
+                alert(instructions);
+            }
+        };
 
         // Hide install button after successful install
         window.addEventListener('appinstalled', () => {
