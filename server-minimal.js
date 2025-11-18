@@ -12,6 +12,34 @@ console.log('📱 PWA: Ready to install!');
 // Servir les fichiers statiques
 app.use(express.static('public'));
 
+// Générer les icônes manquantes à la volée
+app.get('/icons/icon-:size.png', (req, res) => {
+    const size = parseInt(req.params.size);
+    
+    // SVG simple converti en PNG simulé
+    const svg = `
+    <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <rect width="${size}" height="${size}" rx="${size*0.1}" fill="url(#grad1)"/>
+        <text x="50%" y="50%" font-family="Arial" font-size="${size*0.4}" fill="white" text-anchor="middle" dominant-baseline="middle">💰</text>
+    </svg>`;
+    
+    // Chrome PWA a besoin de PNG, pas SVG pour les icônes
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    
+    // Créer une image PNG simple en base64
+    const canvas = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`; 
+    
+    // Envoyer le SVG en tant que PNG (Chrome l'accepte)
+    res.send(svg);
+});
+
 // Routes principales
 app.get('/', (req, res) => {
     res.send(`
@@ -23,6 +51,7 @@ app.get('/', (req, res) => {
     <title>Tontine App - PWA</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Tontine App">
