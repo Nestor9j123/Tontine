@@ -7,7 +7,7 @@
         <meta name="theme-color" content="#2563eb">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-        <link rel="manifest" href="/manifest.webmanifest">
+        <link rel="manifest" href="/manifest.json">
         <link rel="apple-touch-icon" href="/icons/icon-192.png">
         
 
@@ -442,5 +442,98 @@
             transform: translateX(-50%);
         }
     </style>
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js');
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Créer un bouton d'installation si pas déjà présent
+            if (!document.querySelector('#pwa-install-btn')) {
+                const installBtn = document.createElement('button');
+                installBtn.id = 'pwa-install-btn';
+                installBtn.innerHTML = '📱 Installer l\'app';
+                installBtn.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors z-50';
+                installBtn.onclick = async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null;
+                        installBtn.remove();
+                    }
+                };
+                document.body.appendChild(installBtn);
+                
+                // Masquer le bouton après 10 secondes
+                setTimeout(() => {
+                    if (installBtn && installBtn.parentNode) {
+                        installBtn.remove();
+                    }
+                }, 10000);
+            }
+        });
+
+        // Cacher le bouton si l'app est déjà installée
+        window.addEventListener('appinstalled', (evt) => {
+            const installBtn = document.querySelector('#pwa-install-btn');
+            if (installBtn) {
+                installBtn.remove();
+            }
+        });
+
+        // Indicateur de statut en ligne/hors ligne
+        function createOnlineIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'online-indicator';
+            indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300';
+            
+            function updateStatus() {
+                if (navigator.onLine) {
+                    indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300 bg-green-500 text-white';
+                    indicator.innerHTML = '● En ligne';
+                } else {
+                    indicator.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-xs font-medium z-50 transition-all duration-300 bg-red-500 text-white animate-pulse';
+                    indicator.innerHTML = '● Hors ligne';
+                }
+            }
+            
+            updateStatus();
+            document.body.appendChild(indicator);
+            
+            // Masquer après 3 secondes si en ligne
+            if (navigator.onLine) {
+                setTimeout(() => {
+                    if (indicator && indicator.parentNode && navigator.onLine) {
+                        indicator.style.opacity = '0';
+                        setTimeout(() => {
+                            if (indicator && indicator.parentNode) {
+                                indicator.remove();
+                            }
+                        }, 300);
+                    }
+                }, 3000);
+            }
+            
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+        }
+
+        // Créer l'indicateur au chargement
+        document.addEventListener('DOMContentLoaded', createOnlineIndicator);
+
+        // Gérer la synchronisation en background (quand on revient en ligne)
+        window.addEventListener('online', () => {
+            // Ici on pourrait ajouter la logique de synchronisation des données en attente
+        });
+    </script>
 </body>
 </html>
