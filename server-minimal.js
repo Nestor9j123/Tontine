@@ -44,7 +44,9 @@ app.get('/manifest.json', (req, res) => {
     };
     
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.json(manifest);
 });
 
@@ -56,9 +58,9 @@ app.get('/icons/icon-:size.png', (req, res) => {
         return res.status(400).send('Invalid size');
     }
     
-    // Image PNG 1x1 pixel en base64 (transparent)
-    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=';
-    const pngBuffer = Buffer.from(pngBase64, 'base64');
+    // PNG bleu simple 1x1 avec couleur Tontine 
+    const bluePngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9wBgAEhAJ1AHdMKgAAAABJRU5ErkJggg==';
+    const pngBuffer = Buffer.from(bluePngBase64, 'base64');
     
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=86400');
