@@ -23,16 +23,19 @@ class RenderDemoSeeder extends Seeder
         \DB::table('tontines')->delete();
         \DB::table('clients')->delete();
         \DB::table('products')->delete();
+        \DB::table('model_has_permissions')->delete();
         \DB::table('model_has_roles')->delete();
+        \DB::table('role_has_permissions')->delete();
+        \DB::table('permissions')->delete();
+        \DB::table('roles')->delete();
         \DB::table('users')->delete();
         
         $this->command->info('✅ Données nettoyées');
         
-        // Créer les rôles
-        $roles = ['super_admin', 'secretary', 'agent'];
-        foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
-        }
+        // Créer les rôles ET permissions d'abord
+        $this->command->info('🔑 Création des rôles et permissions...');
+        $this->call(RoleSeeder::class);
+        $this->command->info('✅ Rôles et permissions créés');
 
         // Créer l'utilisateur admin
         $admin = User::firstOrCreate([
