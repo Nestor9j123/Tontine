@@ -17,13 +17,22 @@ git push origin master
 3. **Connect GitHub** → Sélectionner votre repo Tontine
 4. **Configurez** :
 
-#### 🔧 Configuration Service :
+#### 🔧 Configuration Service (2 OPTIONS) :
+
+**OPTION A - DOCKER (Recommandé)** :
 - **Name** : `tontine-app`
-- **Runtime** : `PHP`
+- **Runtime** : `Docker`
 - **Branch** : `master`
 - **Root Directory** : (laisser vide)
-- **Build Command** : `./build.sh`
-- **Start Command** : `php artisan serve --host=0.0.0.0 --port=$PORT --env=production`
+- **Dockerfile Path** : `./Dockerfile`
+
+**OPTION B - NODE.JS (Alternative)** :
+- **Name** : `tontine-app`
+- **Runtime** : `Node.js`
+- **Branch** : `master`
+- **Root Directory** : (laisser vide)
+- **Build Command** : `npm install`
+- **Start Command** : `npm start`
 
 #### 🗄️ Configuration Base de Données :
 1. **New** → **PostgreSQL Database**
