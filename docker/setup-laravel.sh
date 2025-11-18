@@ -10,14 +10,27 @@ if [ ! -f /usr/local/bin/composer ]; then
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-# Supprimer le lock file et réinstaller proprement
-echo "🧹 Nettoyage des dépendances..."
+# NETTOYAGE COMPLET DE COMPOSER
+echo "🧹 Nettoyage complet de Composer..."
+rm -rf vendor/
 rm -f composer.lock
+rm -rf /root/.composer
 
-# Installer les dépendances
-echo "📦 Installation des dépendances..."
-composer update --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction
-composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction
+# Utiliser le composer.json propre
+echo "📝 Utilisation du composer.json simplifié..."
+cp composer.clean.json composer.json
+
+# Réinstaller Composer proprement
+echo "🔧 Réinstallation de Composer..."
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --force
+
+# Installer les dépendances de base
+echo "📦 Installation des dépendances de base..."
+composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction --verbose
+
+# Ajouter les packages optionnels après coup si nécessaire
+echo "➕ Ajout des packages optionnels..."
+composer require barryvdh/laravel-dompdf --no-interaction --ignore-platform-reqs || echo "PDF package skipped"
 
 # Créer .env si pas présent
 if [ ! -f .env ]; then

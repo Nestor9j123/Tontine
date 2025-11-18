@@ -40,6 +40,13 @@ git push origin master
 - **Root Directory** : (laisser vide)
 - **Dockerfile Path** : `./Dockerfile.ultra`
 
+**OPTION A-4 - DOCKER MINIMAL (Debug)** :
+- **Name** : `tontine-app`
+- **Runtime** : `Docker`
+- **Branch** : `master`
+- **Root Directory** : (laisser vide)
+- **Dockerfile Path** : `./Dockerfile.minimal`
+
 **OPTION B - NODE.JS (Alternative)** :
 - **Name** : `tontine-app`
 - **Runtime** : `Node.js`
