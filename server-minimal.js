@@ -122,11 +122,32 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        // PWA Service Worker
+        // PWA Service Worker avec debug
+        console.log('🔍 DIAGNOSTIC PWA:');
+        console.log('📱 Navigateur:', navigator.userAgent);
+        console.log('🔒 HTTPS:', window.location.protocol === 'https:');
+        console.log('⚙️ Service Worker supporté:', 'serviceWorker' in navigator);
+        
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
-                .then(() => console.log('✅ Service Worker registered'))
-                .catch(() => console.log('❌ Service Worker failed'));
+                .then(() => {
+                    console.log('✅ Service Worker registered');
+                    // Test du manifest
+                    fetch('/manifest.json')
+                        .then(response => {
+                            if (response.ok) {
+                                console.log('✅ Manifest accessible');
+                            } else {
+                                console.log('❌ Manifest introuvable');
+                            }
+                        })
+                        .catch(() => console.log('❌ Erreur manifest'));
+                })
+                .catch((error) => {
+                    console.log('❌ Service Worker failed:', error);
+                });
+        } else {
+            console.log('❌ Service Worker non supporté');
         }
 
         // PWA Install Prompt
@@ -164,14 +185,40 @@ app.get('/', (req, res) => {
                     deferredPrompt = null;
                 });
             } else {
-                // Instructions manuelles si pas de prompt
-                const instructions = 'Instructions d\\'installation:\\n\\n' +
-                    'Chrome Desktop:\\n' +
-                    '1. Menu Chrome (⋮) → "Installer Tontine App"\\n\\n' +
-                    'Chrome Mobile:\\n' +
-                    '1. Menu Chrome (⋮) → "Ajouter à l\\'écran d\\'accueil"\\n\\n' +
-                    'Safari iOS:\\n' +
-                    '1. Bouton Partager (📤) → "Ajouter à l\\'écran d\\'accueil"';
+                // Créer un raccourci desktop alternatif
+                const isChrome = navigator.userAgent.includes('Chrome');
+                const isFirefox = navigator.userAgent.includes('Firefox');
+                const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+                
+                let instructions = 'INSTRUCTIONS D\\'INSTALLATION:\\n\\n';
+                
+                if (isChrome) {
+                    instructions += '🔧 CHROME - Méthodes alternatives:\\n' +
+                        '1. Ctrl+D → Ajouter aux favoris → Cocher "Applications"\\n' +
+                        '2. Créer un raccourci desktop:\\n' +
+                        '   - Clic droit sur bureau → Nouveau → Raccourci\\n' +
+                        '   - URL: ' + window.location.href + '\\n' +
+                        '   - Nom: Tontine App\\n\\n' +
+                        '3. Mode Kiosque Chrome:\\n' +
+                        '   - chrome.exe --app=' + window.location.href;
+                } else if (isFirefox) {
+                    instructions += '🦊 FIREFOX:\\n' +
+                        '1. Créer un raccourci desktop:\\n' +
+                        '   - Clic droit sur bureau → Nouveau → Raccourci\\n' +
+                        '   - URL: ' + window.location.href + '\\n' +
+                        '   - Nom: Tontine App';
+                } else if (isSafari) {
+                    instructions += '🍎 SAFARI:\\n' +
+                        '1. Bouton Partager (📤)\\n' +
+                        '2. "Ajouter à l\\'écran d\\'accueil"';
+                } else {
+                    instructions += '🌐 NAVIGATEUR GÉNÉRIQUE:\\n' +
+                        '1. Créer un raccourci desktop:\\n' +
+                        '   - Clic droit sur bureau → Nouveau → Raccourci\\n' +
+                        '   - URL: ' + window.location.href + '\\n' +
+                        '   - Nom: Tontine App';
+                }
+                
                 alert(instructions);
             }
         };
