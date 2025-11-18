@@ -10,8 +10,13 @@ if [ ! -f /usr/local/bin/composer ]; then
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
+# Supprimer le lock file et réinstaller proprement
+echo "🧹 Nettoyage des dépendances..."
+rm -f composer.lock
+
 # Installer les dépendances
 echo "📦 Installation des dépendances..."
+composer update --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction
 composer install --no-dev --optimize-autoloader --ignore-platform-reqs --no-interaction
 
 # Créer .env si pas présent
