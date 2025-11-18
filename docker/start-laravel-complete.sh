@@ -27,16 +27,22 @@ if [ ! -f .env ]; then
     if [ ! -z "$DATABASE_URL" ]; then
         echo "🗄️ Configuration base de données depuis DATABASE_URL..."
         echo "DB_CONNECTION=pgsql" >> .env
-        echo "DB_URL=$DATABASE_URL" >> .env
+        echo "DATABASE_URL=$DATABASE_URL" >> .env
     else
-        echo "🗄️ Configuration base de données depuis variables..."
+        echo "🗄️ Configuration base de données depuis variables individuelles..."
         echo "DB_CONNECTION=pgsql" >> .env
-        echo "DB_HOST=${DB_HOST:-localhost}" >> .env
+        echo "DB_HOST=${DB_HOST}" >> .env
         echo "DB_PORT=${DB_PORT:-5432}" >> .env
-        echo "DB_DATABASE=${DB_DATABASE:-tontine}" >> .env
-        echo "DB_USERNAME=${DB_USERNAME:-postgres}" >> .env
-        echo "DB_PASSWORD=${DB_PASSWORD:-}" >> .env
+        echo "DB_DATABASE=${DB_DATABASE}" >> .env
+        echo "DB_USERNAME=${DB_USERNAME}" >> .env
+        echo "DB_PASSWORD=${DB_PASSWORD}" >> .env
     fi
+    
+    # Debug des variables DB
+    echo "📋 Variables DB détectées :"
+    echo "DATABASE_URL: ${DATABASE_URL:-NON_DEFINI}"
+    echo "DB_HOST: ${DB_HOST:-NON_DEFINI}"
+    echo "DB_DATABASE: ${DB_DATABASE:-NON_DEFINI}"
     
     # Autres configurations
     echo "APP_ENV=production" >> .env
