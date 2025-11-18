@@ -12,32 +12,76 @@ console.log('📱 PWA: Ready to install!');
 // Servir les fichiers statiques
 app.use(express.static('public'));
 
-// Générer les icônes manquantes à la volée
+// Servir un manifest simplifié
+app.get('/manifest.json', (req, res) => {
+    const manifest = {
+        "name": "Tontine App - Gestion de Tontines",
+        "short_name": "Tontine",
+        "description": "Application de gestion complète de tontines",
+        "start_url": "/",
+        "id": "tontine-app-pwa",
+        "display": "standalone",
+        "background_color": "#1e40af",
+        "theme_color": "#2563eb",
+        "orientation": "portrait-primary",
+        "scope": "/",
+        "lang": "fr",
+        "categories": ["business", "finance", "productivity"],
+        "icons": [
+            {
+                "src": "/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable any"
+            },
+            {
+                "src": "/icons/icon-512.png", 
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable any"
+            }
+        ]
+    };
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(manifest);
+});
+
+// Générer les icônes PWA à la volée (solution temporaire)
 app.get('/icons/icon-:size.png', (req, res) => {
     const size = parseInt(req.params.size);
     
-    // SVG simple converti en PNG simulé
-    const svg = `
-    <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
-            </linearGradient>
-        </defs>
-        <rect width="${size}" height="${size}" rx="${size*0.1}" fill="url(#grad1)"/>
-        <text x="50%" y="50%" font-family="Arial" font-size="${size*0.4}" fill="white" text-anchor="middle" dominant-baseline="middle">💰</text>
-    </svg>`;
+    if (isNaN(size) || size < 16 || size > 1024) {
+        return res.status(400).send('Invalid size');
+    }
     
-    // Chrome PWA a besoin de PNG, pas SVG pour les icônes
+    // Image PNG 1x1 pixel en base64 (transparent)
+    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=';
+    const pngBuffer = Buffer.from(pngBase64, 'base64');
+    
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Length', pngBuffer.length);
+    res.send(pngBuffer);
+});
+
+// Route alternative pour icônes avec dimensions
+app.get('/icons/icon-:width:x:height.png', (req, res) => {
+    const width = parseInt(req.params.width);
+    const height = parseInt(req.params.height);
     
-    // Créer une image PNG simple en base64
-    const canvas = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`; 
+    if (isNaN(width) || isNaN(height) || width < 16 || height < 16) {
+        return res.status(400).send('Invalid dimensions');
+    }
     
-    // Envoyer le SVG en tant que PNG (Chrome l'accepte)
-    res.send(svg);
+    // Image PNG 1x1 pixel en base64
+    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=';
+    const pngBuffer = Buffer.from(pngBase64, 'base64');
+    
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(pngBuffer);
 });
 
 // Routes principales
