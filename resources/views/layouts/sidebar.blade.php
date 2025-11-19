@@ -84,6 +84,27 @@
                 @endif
             </a>
             @endcan
+            
+            @can('view_payments')
+            <!-- Paiements Partiels -->
+            <a href="{{ route('partial-payments.index') }}" 
+               class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('partial-payments.*') ? 'bg-gradient-to-r from-blue-600 to-yellow-500 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }} transition-colors duration-200">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <span class="font-medium">Paiements Partiels</span>
+                @if(auth()->user()->hasRole('secretary') || auth()->user()->hasRole('super_admin'))
+                    @php
+                        $partialCount = \App\Models\Payment::withMissingAmount()
+                            ->whereRaw('missing_amount > missing_paid_amount')
+                            ->count();
+                    @endphp
+                    @if($partialCount > 0)
+                        <span class="ml-auto bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">{{ $partialCount }}</span>
+                    @endif
+                @endif
+            </a>
+            @endcan
 
             <!-- Messages -->
             <a href="{{ route('chat.index') }}" @click="closeMobileSidebar()" class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('chat.*') ? 'bg-gradient-to-r from-blue-600 to-yellow-500 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }} transition-colors duration-200">

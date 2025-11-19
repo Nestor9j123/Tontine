@@ -29,15 +29,15 @@
         <form action="{{ route('products.index') }}" method="GET" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Rechercher</label>
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Rechercher</label>
                     <input type="text" name="search" id="search" value="{{ request('search') }}" 
-                        class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all"
                         placeholder="Nom ou description...">
                 </div>
                 
                 <div>
-                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select name="type" id="type" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select name="type" id="type" class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all">
                         <option value="">Tous les types</option>
                         <option value="daily" {{ request('type') === 'daily' ? 'selected' : '' }}>Journalier</option>
                         <option value="weekly" {{ request('type') === 'weekly' ? 'selected' : '' }}>Hebdomadaire</option>
@@ -47,8 +47,8 @@
                 </div>
                 
                 <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                    <select name="status" id="status" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+                    <select name="status" id="status" class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all">
                         <option value="">Tous les statuts</option>
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actif</option>
                         <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactif</option>
@@ -56,8 +56,8 @@
                 </div>
                 
                 <div>
-                    <label for="sort" class="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
-                    <select name="sort" id="sort" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <label for="sort" class="block text-sm font-medium text-gray-700 mb-2">Trier par</label>
+                    <select name="sort" id="sort" class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all">
                         <option value="created_at" {{ request('sort') === 'created_at' ? 'selected' : '' }}>Date de création</option>
                         <option value="name" {{ request('sort') === 'name' ? 'selected' : '' }}>Nom</option>
                         <option value="price" {{ request('sort') === 'price' ? 'selected' : '' }}>Prix</option>
@@ -68,30 +68,30 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="flex items-end space-x-4">
                     <div class="flex-1">
-                        <label for="min_price" class="block text-sm font-medium text-gray-700 mb-1">Prix minimum</label>
+                        <label for="min_price" class="block text-sm font-medium text-gray-700 mb-2">Prix minimum</label>
                         <input type="number" name="min_price" id="min_price" value="{{ request('min_price') }}" 
-                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all"
                             placeholder="FCFA">
                     </div>
                     <div class="flex-1">
-                        <label for="max_price" class="block text-sm font-medium text-gray-700 mb-1">Prix maximum</label>
+                        <label for="max_price" class="block text-sm font-medium text-gray-700 mb-2">Prix maximum</label>
                         <input type="number" name="max_price" id="max_price" value="{{ request('max_price') }}" 
-                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all"
                             placeholder="FCFA">
                     </div>
                 </div>
                 
                 <div class="flex items-end space-x-4">
                     <div class="flex-1">
-                        <label for="direction" class="block text-sm font-medium text-gray-700 mb-1">Ordre</label>
-                        <select name="direction" id="direction" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <label for="direction" class="block text-sm font-medium text-gray-700 mb-2">Ordre</label>
+                        <select name="direction" id="direction" class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all">
                             <option value="desc" {{ request('direction') === 'desc' || !request('direction') ? 'selected' : '' }}>Décroissant</option>
                             <option value="asc" {{ request('direction') === 'asc' ? 'selected' : '' }}>Croissant</option>
                         </select>
                     </div>
                     <div class="flex-1">
-                        <label for="per_page" class="block text-sm font-medium text-gray-700 mb-1">Par page</label>
-                        <select name="per_page" id="per_page" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <label for="per_page" class="block text-sm font-medium text-gray-700 mb-2">Par page</label>
+                        <select name="per_page" id="per_page" class="w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 transition-all">
                             <option value="15" {{ request('per_page') == 15 || !request('per_page') ? 'selected' : '' }}>15</option>
                             <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30</option>
                             <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
@@ -101,10 +101,18 @@
                 </div>
                 
                 <div class="flex items-end space-x-4">
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex-1">Filtrer</button>
-                    @if(request()->hasAny(['search', 'type', 'status', 'min_price', 'max_price', 'sort', 'direction', 'per_page']))
-                        <a href="{{ route('products.index') }}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition flex-1 text-center">Réinitialiser</a>
-                    @endif
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex-1 font-medium flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <span>Filtrer</span>
+                    </button>
+                    <a href="{{ route('products.index') }}" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition flex-1 text-center font-medium flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span>Effacer</span>
+                    </a>
                 </div>
             </div>
         </form>

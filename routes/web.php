@@ -19,9 +19,9 @@ use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\MonthlyReportController;
 use App\Http\Controllers\AgentReceiptController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PartialPaymentController;
+use App\Http\Controllers\AgentPerformanceController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,90 +31,6 @@ use Illuminate\Support\Facades\Hash;
 
 Route::get('/', function () {
     return redirect()->route('login');
-});
-
-// Route de debug pour diagnostiquer l'erreur 500
-Route::get('/debug', function () {
-    try {
-        $dbConnection = DB::connection()->getPdo();
-        $dbStatus = 'Connected';
-    } catch (\Exception $e) {
-        $dbStatus = 'Failed: ' . $e->getMessage();
-    }
-    
-    // Vérifier les utilisateurs en base
-    try {
-        $users = DB::table('users')->select('id', 'name', 'email', 'created_at')->get();
-        $usersInfo = $users->toArray();
-    } catch (\Exception $e) {
-        $usersInfo = 'Error: ' . $e->getMessage();
-    }
-    
-    return response()->json([
-        'status' => 'Laravel OK',
-        'database' => $dbStatus,
-        'users_in_db' => $usersInfo,
-        'env' => app()->environment(),
-        'debug' => config('app.debug'),
-        'url' => config('app.url'),
-        'laravel_version' => app()->version(),
-        'php_version' => PHP_VERSION,
-        'storage_writable' => is_writable(storage_path()),
-        'logs_path' => storage_path('logs'),
-        'cache_path' => storage_path('framework/cache'),
-    ]);
-});
-
-// Route pour créer un utilisateur admin de secours
-Route::get('/create-admin', function () {
-    try {
-        // Vérifier si l'admin existe déjà
-        $existingAdmin = DB::table('users')->where('email', 'admin@tontine.local')->first();
-        
-        if ($existingAdmin) {
-            return response()->json([
-                'status' => 'Admin already exists',
-                'email' => 'admin@tontine.local',
-                'created_at' => $existingAdmin->created_at
-            ]);
-        }
-        
-        // Créer l'admin
-        $adminId = DB::table('users')->insertGetId([
-            'name' => 'Administrateur',
-            'email' => 'admin@tontine.local',
-            'email_verified_at' => now(),
-            'password' => Hash::make('password123'),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        
-        // Assigner le rôle super_admin si la table model_has_roles existe
-        try {
-            DB::table('model_has_roles')->insert([
-                'role_id' => 1, // Assuming super_admin is role ID 1
-                'model_type' => 'App\\Models\\User',
-                'model_id' => $adminId
-            ]);
-            $roleAssigned = 'Yes';
-        } catch (\Exception $e) {
-            $roleAssigned = 'Failed: ' . $e->getMessage();
-        }
-        
-        return response()->json([
-            'status' => 'Admin created successfully',
-            'email' => 'admin@tontine.local',
-            'password' => 'password123',
-            'user_id' => $adminId,
-            'role_assigned' => $roleAssigned
-        ]);
-        
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'Error creating admin',
-            'error' => $e->getMessage()
-        ]);
-    }
 });
 
 
@@ -204,11 +120,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/advanced', [ReportsController::class, 'index'])->name('reports.advanced');
     Route::post('/reports/advanced/data', [ReportsController::class, 'getData'])->name('reports.advanced.data');
     Route::get('/reports/advanced/export/{type}', [ReportsController::class, 'export'])->name('reports.advanced.export');
-    
+
+    // Routes pour les profils d'agents
+    Route::get('/agents/{agent}/profile', [AgentPerformanceController::class, 'show'])
+        ->name('agents.profile')
+        ->middleware('role:secretary|super_admin');
+
     // Notifications
     Route::get('/notifications', function () {
         return view('notifications.index');
     })->name('notifications.index');
+
+    // API pour charger les clients d'un agent (utilisée par le formulaire de paiement)
+    Route::get('api/agents/{agent}/clients', function ($agentId) {
+        try {
+            $clients = \App\Models\Client::where('agent_id', $agentId)
+                ->where('is_active', true)
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'last_name', 'phone']);
+
+            return response()->json($clients);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du chargement des clients de l\'agent: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur interne du serveur'], 500);
+        }
+    })->middleware('auth');
 
     // API pour charger les tontines d'un client (utilisée par le formulaire de paiement)
     Route::get('api/clients/{client}/tontines', function ($clientId) {
@@ -321,6 +257,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Routes pour les rapports mensuels
     Route::resource('monthly-reports', MonthlyReportController::class)->except(['destroy']);
+
+    // Routes pour les paiements partiels
+    Route::prefix('partial-payments')->name('partial-payments.')->group(function () {
+        Route::get('/', [PartialPaymentController::class, 'index'])->name('index');
+        Route::get('/{payment}', [PartialPaymentController::class, 'show'])->name('show');
+        Route::get('/{payment}/add-missing', [PartialPaymentController::class, 'addMissingForm'])->name('add-missing-form');
+        Route::post('/{payment}/add-missing', [PartialPaymentController::class, 'storeMissingPayment'])->name('store-missing');
+        Route::get('/{payment}/history', [PartialPaymentController::class, 'history'])->name('history');
+        Route::get('/agent/{agent}', [PartialPaymentController::class, 'agentStats'])->name('agent-stats');
+        Route::get('/client/{client}', [PartialPaymentController::class, 'clientStats'])->name('client-stats');
+    });
+
+    // Route pour le profil détaillé d'un agent (accepte ID ou UUID)
+    Route::get('/agents/{agent}/profile', [AgentPerformanceController::class, 'show'])
+        ->name('agents.profile')
+        ->middleware('role:secretary|super_admin')
+        ->where('agent', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9]+');
     
     // Route de suppression restreinte aux super admins uniquement
     Route::delete('monthly-reports/{monthlyReport}', [MonthlyReportController::class, 'destroy'])

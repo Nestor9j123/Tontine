@@ -261,48 +261,80 @@
         function showExpenseDetails(expenseId) {
             console.log('Tentative de chargement des détails pour la charge ID:', expenseId);
             
-            // Vérifier si Axios est disponible
-            if (typeof window.axios === 'undefined') {
-                console.error('Axios n\'est pas chargé');
-                alert('Erreur: JavaScript non chargé correctement. Veuillez rafraîchir la page.');
-                return;
+            // Afficher un indicateur de chargement
+            const button = event?.target?.closest('button');
+            const originalText = button?.innerHTML || '';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Chargement...';
             }
             
-            // Utiliser Axios qui gère mieux l'authentification
-            window.axios.get(`/expenses/${expenseId}`)
+            // Utiliser fetch() qui est natif au navigateur
+            fetch(`/expenses/${expenseId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
                 .then(response => {
-                    console.log('Données reçues:', response.data);
-                    const expense = response.data;
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Charge non trouvée');
+                        } else if (response.status === 401) {
+                            throw new Error('Vous devez être connecté pour voir les détails');
+                        } else if (response.status === 403) {
+                            throw new Error('Accès interdit');
+                        } else {
+                            throw new Error(`Erreur HTTP: ${response.status}`);
+                        }
+                    }
+                    return response.json();
+                })
+                .then(expense => {
+                    console.log('Données reçues:', expense);
                     const modal = document.getElementById('expenseDetailsModal');
-                    document.getElementById('detailDate').textContent = new Date(expense.expense_date).toLocaleDateString('fr-FR');
-                    document.getElementById('detailType').textContent = expense.type_label || expense.type.replace('_', ' ');
-                    document.getElementById('detailDescription').textContent = expense.description;
-                    document.getElementById('detailAmount').textContent = new Intl.NumberFormat('fr-FR').format(expense.amount) + ' FCFA';
-                    document.getElementById('detailNotes').textContent = expense.notes || 'Aucune note';
-                    document.getElementById('detailCreatedBy').textContent = expense.creator ? expense.creator.name : 'N/A';
-                    document.getElementById('detailCreatedAt').textContent = new Date(expense.created_at).toLocaleDateString('fr-FR');
                     
+                    // Vérifier que le modal existe
+                    if (!modal) {
+                        console.error('Modal expenseDetailsModal non trouvé');
+                        alert('❌ Erreur: Interface de détail non trouvée. Actualisez la page.');
+                        return;
+                    }
+                    
+                    // Vérifier et remplir chaque élément du modal avec sécurité
+                    const setElement = (id, value) => {
+                        const element = document.getElementById(id);
+                        if (element) element.textContent = value;
+                    };
+                    
+                    setElement('detailDate', new Date(expense.expense_date).toLocaleDateString('fr-FR'));
+                    setElement('detailType', expense.type_label || expense.type.replace('_', ' '));
+                    setElement('detailDescription', expense.description);
+                    setElement('detailAmount', new Intl.NumberFormat('fr-FR').format(expense.amount) + ' FCFA');
+                    setElement('detailNotes', expense.notes || 'Aucune note');
+                    setElement('detailCreatedBy', expense.creator ? expense.creator.name : 'N/A');
+                    setElement('detailCreatedAt', new Date(expense.created_at).toLocaleDateString('fr-FR'));
+                    
+                    // Afficher le modal
                     modal.classList.remove('hidden');
                 })
                 .catch(error => {
-                    console.error('Erreur Axios:', error);
-                    if (error.response) {
-                        // Le serveur a répondu avec un statut d'erreur
-                        if (error.response.status === 404) {
-                            alert('Charge non trouvée');
-                        } else if (error.response.status === 401) {
-                            alert('Vous devez être connecté pour voir les détails');
-                        } else if (error.response.status === 403) {
-                            alert('Accès interdit');
-                        } else {
-                            alert(`Erreur: ${error.response.status}`);
-                        }
-                    } else if (error.request) {
-                        // La requête a été faite mais pas de réponse
-                        alert('Erreur de connexion au serveur');
+                    console.error('Erreur lors du chargement des détails:', error);
+                    
+                    // Message d'erreur plus informatif
+                    if (error.message.includes('Charge non trouvée')) {
+                        alert(`❌ La charge avec l'ID ${expenseId} n'existe plus dans la base de données.\n\nElle a peut-être été supprimée. Actualisez la page pour voir la liste mise à jour.`);
                     } else {
-                        // Erreur lors de la configuration de la requête
-                        alert('Erreur: ' + error.message);
+                        alert('❌ Erreur lors du chargement des détails:\n' + error.message);
+                    }
+                })
+                .finally(() => {
+                    // Restaurer le bouton dans tous les cas
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = originalText;
                     }
                 });
         }

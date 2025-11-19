@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\Tontine;
 use App\Services\NotificationService;
+use App\Services\PartialPaymentService;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
@@ -80,17 +81,26 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // Validation différenciée selon le rôle
+        $rules = [
             'client_id' => 'required|exists:clients,id',
             'tontine_id' => 'required|exists:tontines,id',
             'amount' => 'required|numeric|min:1',
+            'expected_amount' => 'nullable|numeric|min:1',
             'daily_amount' => 'nullable|numeric|min:1',
             'days_count' => 'nullable|integer|min:1|max:365',
             'payment_date' => 'nullable|date',
             'payment_method' => 'required|in:cash,mobile_money,bank_transfer',
             'transaction_id' => 'nullable|string',
             'notes' => 'nullable|string',
-        ]);
+        ];
+
+        // Ajouter validation pour l'agent collecteur (secrétaire/super admin seulement)
+        if (auth()->user()->hasAnyRole(['secretary', 'super_admin'])) {
+            $rules['collected_by'] = 'required|exists:users,id';
+        }
+
+        $validated = $request->validate($rules);
 
         // Vérifier que le montant ne dépasse pas le restant à payer
         $tontine = Tontine::find($validated['tontine_id']);
@@ -107,7 +117,22 @@ class PaymentController extends Controller
             ])->withInput();
         }
 
-        $validated['collected_by'] = auth()->id();
+        // Définir l'agent collecteur selon le rôle
+        if (auth()->user()->hasAnyRole(['secretary', 'super_admin'])) {
+            // Secrétaire/Super admin peut choisir l'agent
+            // Le champ collected_by est déjà validé dans $validated
+            
+            // Vérifier que l'agent sélectionné a le rôle d'agent
+            $selectedAgent = \App\Models\User::find($validated['collected_by']);
+            if (!$selectedAgent || !$selectedAgent->hasRole('agent')) {
+                return back()->withErrors([
+                    'collected_by' => 'L\'utilisateur sélectionné doit être un agent actif.'
+                ])->withInput();
+            }
+        } else {
+            // Agent connecté se collecte lui-même
+            $validated['collected_by'] = auth()->id();
+        }
         
         // Forcer la date de paiement à aujourd'hui pour sécurité
         $validated['payment_date'] = now()->format('Y-m-d');
@@ -126,18 +151,14 @@ class PaymentController extends Controller
             }
         }
         
-        // Logique de validation automatique pour les agents
-        if (auth()->user()->hasRole('agent') && $validated['amount'] <= 100000) {
-            // Auto-validation pour les agents avec montants ≤ 100k
-            $validated['status'] = 'validated';
-            $validated['validated_by'] = auth()->id();
-            $validated['validated_at'] = now();
-        } else {
-            // En attente pour les montants > 100k ou autres rôles
-            $validated['status'] = 'pending';
-        }
+        // Validation automatique pour tous les paiements
+        $validated['status'] = 'validated';
+        $validated['validated_by'] = auth()->id();
+        $validated['validated_at'] = now();
 
-        $payment = Payment::create($validated);
+        // Utiliser le service pour créer le paiement (gère les paiements partiels)
+        $partialPaymentService = app(PartialPaymentService::class);
+        $payment = $partialPaymentService->createPayment($validated, auth()->id());
 
         // Mettre à jour la tontine
         $tontine->increment('completed_payments');
@@ -168,6 +189,10 @@ class PaymentController extends Controller
                     $payment->days_count,
                     number_format($payment->daily_amount, 0, ',', ' '),
                     number_format($payment->amount, 0, ',', ' ')
+                );
+            } elseif ($payment->is_partial_payment) {
+                $message = $baseMessage . sprintf(' ⚠️ Paiement PARTIEL - Manque %s FCFA. Client peut compléter plus tard.',
+                    number_format($payment->missing_amount, 0, ',', ' ')
                 );
             } else {
                 $message = $baseMessage . '! Montrez le reçu au client.';

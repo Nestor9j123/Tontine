@@ -12,18 +12,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // En production, utiliser le seeder demo
-        if (app()->environment('production')) {
-            $this->call([
-                RenderDemoSeeder::class,
-            ]);
-        } else {
-            // En développement, utiliser les seeders normaux
-            $this->call([
-                RoleSeeder::class,
-                UserSeeder::class,
-                ProductSeeder::class,
-            ]);
-        }
+        $this->call([
+            RoleSeeder::class,
+            UserSeeder::class,
+            ProductSeeder::class,
+        ]);
     }
 }

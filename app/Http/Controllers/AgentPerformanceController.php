@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Payment;
+use App\Services\PartialPaymentService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AgentPerformanceController extends Controller
@@ -141,5 +144,104 @@ class AgentPerformanceController extends Controller
         }
 
         return $goals;
+    }
+
+    /**
+     * Afficher le profil détaillé d'un agent avec ses collectes
+     */
+    public function show($agentIdentifier, Request $request)
+    {
+        // Résoudre l'agent selon l'identifiant (ID ou UUID)
+        if (is_numeric($agentIdentifier)) {
+            // C'est un ID numérique
+            $agent = User::find($agentIdentifier);
+        } else {
+            // C'est un UUID
+            $agent = User::where('uuid', $agentIdentifier)->first();
+        }
+
+        if (!$agent) {
+            abort(404, 'Agent non trouvé');
+        }
+
+        // Vérifier que c'est bien un agent
+        if (!$agent->hasRole('agent')) {
+            abort(404, 'Agent non trouvé');
+        }
+
+        // Statistiques globales de l'agent
+        $stats = [
+            'total_clients' => $agent->clients()->count(),
+            'total_tontines' => $agent->tontines()->count(),
+            'total_payments_collected' => Payment::where('collected_by', $agent->id)->count(),
+            'total_amount_collected' => Payment::where('collected_by', $agent->id)
+                                              ->where('status', 'validated')
+                                              ->sum('amount'),
+            'avg_payment_amount' => Payment::where('collected_by', $agent->id)
+                                          ->where('status', 'validated')
+                                          ->avg('amount'),
+        ];
+
+        // Paiements collectés avec filtres
+        $paymentsQuery = Payment::where('collected_by', $agent->id)
+                               ->with(['client', 'tontine.product', 'validator']);
+
+        // Filtres
+        if ($request->filled('status')) {
+            $paymentsQuery->where('status', $request->status);
+        }
+
+        if ($request->filled('payment_type')) {
+            switch ($request->payment_type) {
+                case 'partial':
+                    $paymentsQuery->where('is_partial_payment', true);
+                    break;
+                case 'complete':
+                    $paymentsQuery->where('is_partial_payment', false);
+                    break;
+                case 'missing':
+                    $paymentsQuery->where('has_missing_payment', true)
+                                 ->where('missing_amount', '>', DB::raw('missing_paid_amount'));
+                    break;
+            }
+        }
+
+        if ($request->filled('date_from')) {
+            $paymentsQuery->whereDate('payment_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $paymentsQuery->whereDate('payment_date', '<=', $request->date_to);
+        }
+
+        $payments = $paymentsQuery->orderBy('payment_date', 'desc')
+                                 ->paginate(20);
+
+        // Paiements partiels en attente pour cet agent
+        $partialPaymentService = app(PartialPaymentService::class);
+        $pendingPartialPayments = $partialPaymentService->getAgentPendingPayments($agent->id);
+
+        // Statistiques par mois (6 derniers mois)
+        $monthlyStats = Payment::where('collected_by', $agent->id)
+                              ->where('status', 'validated')
+                              ->where('payment_date', '>=', now()->subMonths(6))
+                              ->select(
+                                  DB::raw('EXTRACT(YEAR FROM payment_date) as year'),
+                                  DB::raw('EXTRACT(MONTH FROM payment_date) as month'),
+                                  DB::raw('COUNT(*) as count'),
+                                  DB::raw('SUM(amount) as total')
+                              )
+                              ->groupBy(DB::raw('EXTRACT(YEAR FROM payment_date)'), DB::raw('EXTRACT(MONTH FROM payment_date)'))
+                              ->orderBy(DB::raw('EXTRACT(YEAR FROM payment_date)'), 'desc')
+                              ->orderBy(DB::raw('EXTRACT(MONTH FROM payment_date)'), 'desc')
+                              ->get();
+
+        return view('agents.show', compact(
+            'agent', 
+            'stats', 
+            'payments', 
+            'pendingPartialPayments',
+            'monthlyStats'
+        ));
     }
 }

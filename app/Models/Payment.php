@@ -17,6 +17,15 @@ class Payment extends Model
         'client_id',
         'collected_by',
         'amount',
+        'expected_amount',
+        'missing_amount',
+        'is_partial_payment',
+        'has_missing_payment',
+        'missing_paid_amount',
+        'missing_completed_at',
+        'completed_by',
+        'missing_notes',
+        'payment_status',
         'daily_amount',
         'days_count',
         'is_multiple_payment',
@@ -33,8 +42,14 @@ class Payment extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'expected_amount' => 'decimal:2',
+        'missing_amount' => 'decimal:2',
+        'missing_paid_amount' => 'decimal:2',
+        'is_partial_payment' => 'boolean',
+        'has_missing_payment' => 'boolean',
         'payment_date' => 'date',
         'validated_at' => 'datetime',
+        'missing_completed_at' => 'datetime',
     ];
 
     /**
@@ -64,6 +79,16 @@ class Payment extends Model
     public function validator()
     {
         return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function completedBy()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    public function paymentHistory()
+    {
+        return $this->hasMany(PaymentHistory::class)->orderBy('action_date');
     }
 
     // Scopes
@@ -97,6 +122,26 @@ class Payment extends Model
         return $query->whereDate('payment_date', today());
     }
 
+    public function scopePartialPayments($query)
+    {
+        return $query->where('is_partial_payment', true);
+    }
+
+    public function scopeWithMissingAmount($query)
+    {
+        return $query->where('has_missing_payment', true);
+    }
+
+    public function scopeCompletedPayments($query)
+    {
+        return $query->where('payment_status', 'complete');
+    }
+
+    public function scopeMissingPaid($query)
+    {
+        return $query->where('payment_status', 'missing_paid');
+    }
+
     // Accessors
     public function getFormattedAmountAttribute()
     {
@@ -111,6 +156,96 @@ class Payment extends Model
             'rejected' => '<span class="badge bg-danger">Rejeté</span>',
             default => '<span class="badge bg-secondary">Inconnu</span>',
         };
+    }
+
+    public function getPaymentStatusBadgeAttribute()
+    {
+        return match($this->payment_status) {
+            'complete' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Complet</span>',
+            'partial' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Partiel</span>',
+            'missing_paid' => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Manquant payé</span>',
+            default => '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inconnu</span>',
+        };
+    }
+
+    public function getFormattedExpectedAmountAttribute()
+    {
+        return $this->expected_amount ? number_format($this->expected_amount, 0, ',', ' ') . ' FCFA' : null;
+    }
+
+    public function getFormattedMissingAmountAttribute()
+    {
+        return number_format($this->missing_amount, 0, ',', ' ') . ' FCFA';
+    }
+
+    public function getFormattedMissingPaidAmountAttribute()  
+    {
+        return number_format($this->missing_paid_amount, 0, ',', ' ') . ' FCFA';
+    }
+
+    public function getRemainingMissingAmountAttribute()
+    {
+        return $this->missing_amount - $this->missing_paid_amount;
+    }
+
+    public function getFormattedRemainingMissingAmountAttribute()
+    {
+        return number_format($this->remaining_missing_amount, 0, ',', ' ') . ' FCFA';
+    }
+
+    public function getIsCompletedAttribute()
+    {
+        return $this->payment_status === 'complete' || 
+               ($this->has_missing_payment && $this->remaining_missing_amount <= 0);
+    }
+
+    // Methods for partial payments management
+    public function addMissingPayment($amount, $recordedBy, $notes = null)
+    {
+        $remainingAmount = $this->remaining_missing_amount - $amount;
+        
+        // Update payment
+        $this->missing_paid_amount += $amount;
+        
+        if ($remainingAmount <= 0) {
+            $this->payment_status = 'missing_paid';
+            $this->missing_completed_at = now();
+            $this->completed_by = $recordedBy;
+        }
+        
+        $this->save();
+
+        // Add to history
+        PaymentHistory::create([
+            'payment_id' => $this->id,
+            'client_id' => $this->client_id,
+            'agent_id' => $this->collected_by,
+            'recorded_by' => $recordedBy,
+            'action_type' => $remainingAmount <= 0 ? 'completion' : 'missing_payment',
+            'amount' => $amount,
+            'expected_amount' => $this->expected_amount,
+            'remaining_amount' => max(0, $remainingAmount),
+            'notes' => $notes,
+            'action_date' => now(),
+        ]);
+
+        return $this;
+    }
+
+    public function createInitialPaymentHistory($recordedBy)
+    {
+        PaymentHistory::create([
+            'payment_id' => $this->id,
+            'client_id' => $this->client_id,
+            'agent_id' => $this->collected_by,
+            'recorded_by' => $recordedBy,
+            'action_type' => 'initial_payment',
+            'amount' => $this->amount,
+            'expected_amount' => $this->expected_amount,
+            'remaining_amount' => $this->missing_amount,
+            'notes' => $this->notes,
+            'action_date' => $this->payment_date,
+        ]);
     }
 
     // Boot method
